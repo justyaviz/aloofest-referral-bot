@@ -70,18 +70,28 @@ async def check_join(update: Update, context: ContextTypes.DEFAULT_TYPE):
         is_joined = False
 
     if is_joined and not u["joined"]:
-        u["joined"] = True
-        if u["ref_by"]:
-            ref_user = get_user(data, u["ref_by"])
-            ref_user["refs"] += 1
-        save_data(data)
-        msg = "✅ Tasdiqlandi! Endi taklif linkni ulashing 🚀"
-    elif is_joined:
-        msg = "✅ Siz allaqachon tasdiqlangansiz."
-    else:
-        msg = f"❌ Avval kanalga a’zo bo‘ling: {CHANNEL_USERNAME}"
+    u["joined"] = True
 
-    await q.edit_message_text(msg, reply_markup=q.message.reply_markup)
+    # referral +1
+    if u["ref_by"]:
+        ref_user = get_user(data, u["ref_by"])
+        ref_user["refs"] += 1
+
+    save_data(data)
+
+    register_url = "https://forms.gle/jqYvBVR99jB5W8Yu5"
+
+    kb2 = [
+        [InlineKeyboardButton("📝 Ro‘yxatdan o‘tish", url=register_url)],
+        [InlineKeyboardButton("📣 Taklif linkim", callback_data="mylink")],
+        [InlineKeyboardButton("📊 Natijam", callback_data="stats")]
+    ]
+
+    await q.edit_message_text(
+        "✅ Obuna tasdiqlandi!\n\n"
+        "🎉 Konkursga ro‘yxatdan o‘tish uchun quyidagi tugmani bosing 👇",
+        reply_markup=InlineKeyboardMarkup(kb2)
+    )
 
 async def my_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
     q = update.callback_query

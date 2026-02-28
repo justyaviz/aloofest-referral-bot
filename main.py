@@ -194,8 +194,9 @@ FORM_HTML = """
 async def register_get(uid: int, sig: str):
     if not verify_uid(uid, sig):
         return HTMLResponse("<h3>❌ Noto‘g‘ri link</h3>", status_code=403)
+
     html = FORM_HTML.replace("{uid}", str(uid)).replace("{sig}", sig)
-return HTMLResponse(html)
+    return HTMLResponse(html)
 
 @app.post("/register", response_class=HTMLResponse)
 async def register_post(uid: int = Form(...), sig: str = Form(...), name: str = Form(...), surname: str = Form(...)):

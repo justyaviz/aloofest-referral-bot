@@ -101,6 +101,12 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     save_data(data)
 
+    # ✅ Agar ro‘yxatdan o‘tgan bo‘lsa (ism + telefon bor)
+    if (u.get("name") or "").strip() and (u.get("phone") or "").strip():
+        await update.message.reply_text(RULES_TEXT, reply_markup=MENU_KB)
+        return
+
+    # ❌ Aks holda obuna tekshirish sahifasi
     kb = [
         [InlineKeyboardButton("✅📺 Kanalga obuna bo‘lish", url=f"https://t.me/{CHANNEL_USERNAME.replace('@','')}")],
         [InlineKeyboardButton("✅ Obunani tekshirish", callback_data="check")],

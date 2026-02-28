@@ -57,6 +57,12 @@ def sign_uid(uid: int) -> str:
 def verify_uid(uid: int, sig: str) -> bool:
     return hmac.compare_digest(sign_uid(uid), sig or "")
 
+def full_name(info: dict, fallback: str = "Ishtirokchi") -> str:
+    name = (info.get("name") or "").strip()
+    surname = (info.get("surname") or "").strip()
+    full = (name + " " + surname).strip()
+    return full if full else fallback
+
 # ====== UI TEXTS ======
 RULES_TEXT = (
     "❓ Tanishlarni qanday qo'shish kerak va Ballar qanday hisoblanadi\n\n"
@@ -131,7 +137,6 @@ async def check_join(update: Update, context: ContextTypes.DEFAULT_TYPE):
         is_joined = False
 
     if is_joined:
-        # bir marta joined qilib qo'yamiz
         if not u["joined"]:
             u["joined"] = True
             if u["ref_by"]:
@@ -141,7 +146,6 @@ async def check_join(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         sig = sign_uid(user.id)
         reg_link = f"{BASE_URL}/register?uid={user.id}&sig={sig}"
-
         kb2 = [[InlineKeyboardButton("📝 Ro‘yxatdan o‘tish", url=reg_link)]]
 
         await q.edit_message_text(
@@ -186,9 +190,17 @@ async def my_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "🥇 1-o‘rin — Tecno Spark 30C smartfoni\n"
         "🥈 2-o‘rin — Mi kolonkasi\n"
         "🥉 3-o‘rin — Zamonaviy ryugzak\n\n"
-        "Ishtirok etish juda oson!\n\n"
+        "Ishtirok etish juda oson 👇\n\n"
+        "1️⃣ @aloo_uzb kanaliga obuna bo‘ling\n"
+        "2️⃣ @aloofest_bot ro'yhatdan o'ting\n"
+        "3️⃣ Do‘stlaringizni taklif qiling va imkoniyatingizni oshiring!\n\n"
+        "📆 1-martdan 8-martgacha\n"
+        "🏆 9-mart kuni jonli efirda g‘oliblarni aniqlaymiz!\n\n"
+        "⚡️ Qancha ko‘p do‘st taklif qilsangiz — yutish ehtimolingiz shuncha yuqori!\n\n"
+        "Omad tilaymiz! 🎉\n\n"
         "Konkursda qatnashish uchun quyidagi havola orqali o'ting 👇👇\n\n"
-        f"{personal_link}"
+        f"{personal_link}\n\n"
+        "aloo — texno hayotga ulanish 💙"
     )
 
     photo_path = "static/post.jpg"
@@ -197,8 +209,7 @@ async def my_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await update.message.reply_photo(photo=photo, caption=caption, reply_markup=MENU_KB)
     else:
         await update.message.reply_text(
-            "❌ Rasm topilmadi: static/post.jpg\n\n"
-            "Repo ichiga `static/post.jpg` qilib yuklang.",
+            "❌ Rasm topilmadi: static/post.jpg\n\nRepo ichiga `static/post.jpg` qilib yuklang.",
             reply_markup=MENU_KB,
         )
 
@@ -221,23 +232,51 @@ async def my_account(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(text, reply_markup=MENU_KB)
 
 async def top10(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.effective_user.id
     data = load_data()
     users = data.get("users", {})
 
-    # sort by refs desc
-    sorted_users = sorted(users.items(), key=lambda kv: kv[1].get("refs", 0), reverse=True)
-    top = sorted_users[:10]
+    # list -> sort by refs desc
+    items = []
+    for uid, info in users.items():
+        refs = int(info.get("refs", 0) or 0)
+        name = full_name(info, fallback=f"ID:{uid}")
+        items.append((int(uid), name, refs))
 
-    if not top:
-        await update.message.reply_text("Hali natijalar yo‘q.", reply_markup=MENU_KB)
-        return
+    items.sort(key=lambda x: x[2], reverse=True)
 
-    lines = ["🏆 TOP 10🏆\n"]
-    for i, (uid, info) in enumerate(top, start=1):
-        name = (info.get("name") or "").strip()
-        surname = (info.get("surname") or "").strip()
-        full = (name + " " + surname).strip() or f"ID:{uid}"
-        lines.append(f"{i}) {full} — {info.get('refs',0)} ball")
+    # TOP10 lines
+    medals = ["🥇", "🥈", "🥉"]
+    nums = ["4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"]
+
+    top = items[:10]
+    lines = ["🏆 TOP 10 ISHTIROKCHILAR \n"]
+    for i, (uid, name, refs) in enumerate(top):
+        if i < 3:
+            prefix = medals[i]
+        else:
+            prefix = nums[i - 3]
+        lines.append(f"{prefix} {name} - {refs} ta")
+
+    # my rank
+    my_rank = None
+    my_refs = 0
+    for idx, (uid, name, refs) in enumerate(items, start=1):
+        if uid == user_id:
+            my_rank = idx
+            my_refs = refs
+            break
+
+    if my_rank is None:
+        my_rank = len(items) + 1
+        my_refs = 0
+
+    lines.append("\n\n")
+    lines.append(f"Sizning o'rningiz: {my_rank}-o'rin ({my_refs} ta)\n\n")
+    lines.append(
+        "Sizning urinishingiz yomon emas yanada teparoq ko'tarilish uchun va qimmatbaho sovg'a yutish uchun "
+        "shaxsiy linkingiz tanishlaringizga yuboring va ular kanalga qo'shilishi kerak, OMAD sizga 😊"
+    )
 
     await update.message.reply_text("\n".join(lines), reply_markup=MENU_KB)
 
@@ -258,7 +297,6 @@ async def gifts(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "Omad tilaymiz! 🎉\n\n"
         "aloo — texno hayotga ulanish 💙"
     )
-
     await update.message.reply_text(text, reply_markup=MENU_KB)
 
 async def guide(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -341,9 +379,7 @@ async def register_post(
         reply_markup=contact_kb
     )
 
-    return HTMLResponse(
-        "<h3>✅ Tayyor!</h3><p>Telegramga qayting — bot sizdan telefon raqamingizni so‘raydi.</p>"
-    )
+    return HTMLResponse("<h3>✅ Tayyor!</h3><p>Telegramga qayting — bot sizdan telefon raqamingizni so‘raydi.</p>")
 
 @app.post("/telegram")
 async def telegram_webhook(request: Request):
@@ -364,12 +400,10 @@ async def on_startup():
 
     tg_app = Application.builder().token(BOT_TOKEN).build()
 
-    # core flow
     tg_app.add_handler(CommandHandler("start", start))
     tg_app.add_handler(CallbackQueryHandler(check_join, pattern="^check$"))
     tg_app.add_handler(MessageHandler(filters.CONTACT, got_contact))
 
-    # menu buttons
     tg_app.add_handler(MessageHandler(filters.TEXT & filters.Regex("^Mening shaxsiy linkim 🔗$"), my_link))
     tg_app.add_handler(MessageHandler(filters.TEXT & filters.Regex("^Mening hisobim 📑$"), my_account))
     tg_app.add_handler(MessageHandler(filters.TEXT & filters.Regex("^TOP 10🏆$"), top10))
@@ -378,7 +412,6 @@ async def on_startup():
 
     await tg_app.initialize()
     await tg_app.start()
-
     await tg_app.bot.set_webhook(f"{BASE_URL}/telegram")
 
 @app.on_event("shutdown")

@@ -159,7 +159,7 @@ async def got_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
     menu_kb = ReplyKeyboardMarkup(
         [
             ["Mening shaxsiy linkim 🔗", "Sovg'alar 🎁"],
-            ["TOP 15 🏆", "Mening hisobim 📑"],
+            ["TOP 10🏆", "Mening hisobim 📑"],
             ["Qo'llanma 🗂"],
         ],
         resize_keyboard=True
@@ -175,7 +175,7 @@ async def got_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "⚠️ Konkurs davomida sizning linkingiz orqali qo'shilgan ishtirokchilar \"@aloo_uzb\" kanalidan chiqib ketmasligi kerak.\n\n"
         "🔸 Do'stlarni taklif qilish uchun maxsus linkingizni \"Mening shaxsiy linkim 🔗\" tugmasini bosish orqali olishingiz mumkin.\n"
         "🔸 Nechta do'stingiz qo'shilganini bilish uchun \"Mening hisobim 📑\" tugmasini bosing.\n"
-        "🔸 Kunlik umumiy natijalarni ko'rib borish uchun \"TOP 15 🏆\" tugmasini bosing.\n\n"
+        "🔸 Kunlik umumiy natijalarni ko'rib borish uchun \"TOP 10 🏆\" tugmasini bosing.\n\n"
         "👇 Quyidagi tugmalardan foydalaning:"
     )
 

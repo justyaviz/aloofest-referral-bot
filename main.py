@@ -144,10 +144,42 @@ async def got_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
     u["phone"] = phone
     save_data(data)
 
-    await update.message.reply_text(
-        "✅ Rahmat! Telefon raqamingiz qabul qilindi.\n\n"
-        "🎉 Endi konkursda ishtirokingiz tasdiqlandi!",
+    async def got_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.message or not update.message.contact:
+        return
+
+    user_id = update.effective_user.id
+    phone = update.message.contact.phone_number
+
+    data = load_data()
+    u = get_user(data, user_id)
+    u["phone"] = phone
+    save_data(data)
+
+    menu_kb = ReplyKeyboardMarkup(
+        [
+            ["Mening shaxsiy linkim 🔗", "Sovg'alar 🎁"],
+            ["TOP 15 🏆", "Mening hisobim 📑"],
+            ["Qo'llanma 🗂"],
+        ],
+        resize_keyboard=True
     )
+
+    text = (
+        "❓ Tanishlarni qanday qo'shish kerak va Ballar qanday hisoblanadi\n\n"
+        "👥 Sizga alohida \"unikal link\" beriladi va o'sha link orqali kanalga qo'shilgan do'stlaringiz uchun +1 ball beriladi.\n\n"
+        "TOP 3 talik uchun Sovg'alar qanday taqdim qilinadi:\n\n"
+        "Eng ko'p tanishini qo'shgan ishtirokchiga 1-o'rindagi sovg'amiz va shu ketma-ketlikda 3-o'ringacha qimmatbaho sovg'alar beriladi. "
+        "Siz kunlik o'z o'rningizni ko'rib borishingiz mumkin bo'ladi. 9-mart kuni soat 14:00 da Jonli Efir orqali G'oliblarni aniqlaymiz.\n\n"
+        "O'yin qoidalari va ball to'plash usullari bilan yaxshilab tanishing. Faollik ko'rsating, vazifalarni bajaring va o'yin davomida kafolatlangan sovg'alarni qo'lga kiriting.\n\n"
+        "⚠️ Konkurs davomida sizning linkingiz orqali qo'shilgan ishtirokchilar \"@aloo_uzb\" kanalidan chiqib ketmasligi kerak.\n\n"
+        "🔸 Do'stlarni taklif qilish uchun maxsus linkingizni \"Mening shaxsiy linkim 🔗\" tugmasini bosish orqali olishingiz mumkin.\n"
+        "🔸 Nechta do'stingiz qo'shilganini bilish uchun \"Mening hisobim 📑\" tugmasini bosing.\n"
+        "🔸 Kunlik umumiy natijalarni ko'rib borish uchun \"TOP 15 🏆\" tugmasini bosing.\n\n"
+        "👇 Quyidagi tugmalardan foydalaning:"
+    )
+
+    await update.message.reply_text(text, reply_markup=menu_kb)
 
 # ====== FASTAPI APP (WEB FORM + WEBHOOK) ======
 app = FastAPI()

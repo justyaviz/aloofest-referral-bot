@@ -19,7 +19,7 @@ from telegram.ext import (
 
 # ====== ENV ======
 BOT_TOKEN = os.getenv("BOT_TOKEN")
-CHANNEL_USERNAME = os.getenv("CHANNEL_USERNAME")  # masalan: @aloofest
+CHANNEL_USERNAME = os.getenv("CHANNEL_USERNAME")  # masalan: @aloo_uzb
 BASE_URL = os.getenv("BASE_URL")  # masalan: https://xxx.up.railway.app
 SECRET_KEY = os.getenv("SECRET_KEY", "change-me")  # o'zingiz qo'ying
 
@@ -39,7 +39,14 @@ def save_data(data):
 def get_user(data, user_id: int):
     uid = str(user_id)
     if uid not in data["users"]:
-        data["users"][uid] = {"ref_by": None, "refs": 0, "joined": False, "name": "", "surname": "", "phone": ""}
+        data["users"][uid] = {
+            "ref_by": None,
+            "refs": 0,
+            "joined": False,
+            "name": "",
+            "surname": "",
+            "phone": "",
+        }
     return data["users"][uid]
 
 # ====== SIGN/VERIFY (tampering bo'lmasin) ======
@@ -49,6 +56,30 @@ def sign_uid(uid: int) -> str:
 
 def verify_uid(uid: int, sig: str) -> bool:
     return hmac.compare_digest(sign_uid(uid), sig or "")
+
+# ====== UI TEXTS ======
+RULES_TEXT = (
+    "❓ Tanishlarni qanday qo'shish kerak va Ballar qanday hisoblanadi\n\n"
+    "👥 Sizga alohida \"unikal link\" beriladi va o'sha link orqali kanalga qo'shilgan do'stlaringiz uchun +1 ball beriladi.\n\n"
+    "TOP 3 talik uchun Sovg'alar qanday taqdim qilinadi:\n\n"
+    "Eng ko'p tanishini qo'shgan ishtirokchiga 1-o'rindagi sovg'amiz va shu ketma-ketlikda 3-o'ringacha qimmatbaho sovg'alar beriladi. "
+    "Siz kunlik o'z o'rningizni ko'rib borishingiz mumkin bo'ladi. 9-mart kuni soat 14:00 da Jonli Efir orqali G'oliblarni aniqlaymiz.\n\n"
+    "O'yin qoidalari va ball to'plash usullari bilan yaxshilab tanishing. Faollik ko'rsating, vazifalarni bajaring va o'yin davomida kafolatlangan sovg'alarni qo'lga kiriting.\n\n"
+    "⚠️ Konkurs davomida sizning linkingiz orqali qo'shilgan ishtirokchilar \"@aloo_uzb\" kanalidan chiqib ketmasligi kerak.\n\n"
+    "🔸 Do'stlarni taklif qilish uchun maxsus linkingizni \"Mening shaxsiy linkim 🔗\" tugmasini bosish orqali olishingiz mumkin.\n"
+    "🔸 Nechta do'stingiz qo'shilganini bilish uchun \"Mening hisobim 📑\" tugmasini bosing.\n"
+    "🔸 Kunlik umumiy natijalarni ko'rib borish uchun \"TOP 10🏆\" tugmasini bosing.\n\n"
+    "👇 Quyidagi tugmalardan foydalaning:"
+)
+
+MENU_KB = ReplyKeyboardMarkup(
+    [
+        ["Mening shaxsiy linkim 🔗", "Sovg'alar 🎁"],
+        ["TOP 10🏆", "Mening hisobim 📑"],
+        ["Qo'llanma 🗂"],
+    ],
+    resize_keyboard=True
+)
 
 # ====== TELEGRAM HANDLERS ======
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -108,13 +139,10 @@ async def check_join(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 ref_user["refs"] += 1
             save_data(data)
 
-        # ro'yxatdan o'tish linki (uid+sig bilan)
         sig = sign_uid(user.id)
         reg_link = f"{BASE_URL}/register?uid={user.id}&sig={sig}"
 
-        kb2 = [
-            [InlineKeyboardButton("📝 Ro‘yxatdan o‘tish", url=reg_link)],
-        ]
+        kb2 = [[InlineKeyboardButton("📝 Ro‘yxatdan o‘tish", url=reg_link)]]
 
         await q.edit_message_text(
             "✅ Obuna tasdiqlandi!\n\n"
@@ -144,42 +172,87 @@ async def got_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
     u["phone"] = phone
     save_data(data)
 
-    async def got_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
-        if not update.message or not update.message.contact:
-            return
+    await update.message.reply_text(RULES_TEXT, reply_markup=MENU_KB)
 
+# --- Menu actions ---
+async def my_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
-    phone = update.message.contact.phone_number
+    me = await context.bot.get_me()
+    personal_link = f"https://t.me/{me.username}?start={user_id}"
 
+    caption = (
+        "Aziz xotin-qizlar bayrami munosabati bilan ajoyib sovg‘alar tayyorladik! 💙\n\n"
+        "🎁 Sovg‘alar:\n\n"
+        "🥇 1-o‘rin — Tecno Spark 30C smartfoni\n"
+        "🥈 2-o‘rin — Mi kolonkasi\n"
+        "🥉 3-o‘rin — Zamonaviy ryugzak\n\n"
+        "Ishtirok etish juda oson!\n\n"
+        "Konkursda qatnashish uchun quyidagi havola orqali o'ting 👇👇\n\n"
+        f"{personal_link}"
+    )
+
+    photo_path = "static/post.jpg"
+    if os.path.exists(photo_path):
+        with open(photo_path, "rb") as photo:
+            await update.message.reply_photo(photo=photo, caption=caption, reply_markup=MENU_KB)
+    else:
+        await update.message.reply_text(
+            "❌ Rasm topilmadi: static/post.jpg\n\n"
+            "Repo ichiga `static/post.jpg` qilib yuklang.",
+            reply_markup=MENU_KB,
+        )
+
+async def my_account(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.effective_user.id
     data = load_data()
     u = get_user(data, user_id)
-    u["phone"] = phone
-    save_data(data)
 
-    menu_kb = ReplyKeyboardMarkup(
-        [
-            ["Mening shaxsiy linkim 🔗", "Sovg'alar 🎁"],
-            ["TOP 10🏆", "Mening hisobim 📑"],
-            ["Qo'llanma 🗂"],
-        ],
-        resize_keyboard=True
-    )
+    me = await context.bot.get_me()
+    personal_link = f"https://t.me/{me.username}?start={user_id}"
 
     text = (
-        "❓ Tanishlarni qanday qo'shish kerak va Ballar qanday hisoblanadi\n\n"
-        "👥 Sizga alohida \"unikal link\" beriladi va o'sha link orqali kanalga qo'shilgan do'stlaringiz uchun +1 ball beriladi.\n\n"
-        "TOP 3 talik uchun Sovg'alar qanday taqdim qilinadi:\n\n"
-        "Eng ko'p tanishini qo'shgan ishtirokchiga 1-o'rindagi sovg'amiz va shu ketma-ketlikda 3-o'ringacha qimmatbaho sovg'alar beriladi. "
-        "Siz kunlik o'z o'rningizni ko'rib borishingiz mumkin bo'ladi. 9-mart kuni soat 14:00 da Jonli Efir orqali G'oliblarni aniqlaymiz.\n\n"
-        "O'yin qoidalari va ball to'plash usullari bilan yaxshilab tanishing. Faollik ko'rsating, vazifalarni bajaring va o'yin davomida kafolatlangan sovg'alarni qo'lga kiriting.\n\n"
-        "⚠️ Konkurs davomida sizning linkingiz orqali qo'shilgan ishtirokchilar \"@aloo_uzb\" kanalidan chiqib ketmasligi kerak.\n\n"
-        "🔸 Do'stlarni taklif qilish uchun maxsus linkingizni \"Mening shaxsiy linkim 🔗\" tugmasini bosish orqali olishingiz mumkin.\n"
-        "🔸 Nechta do'stingiz qo'shilganini bilish uchun \"Mening hisobim 📑\" tugmasini bosing.\n"
-        "🔸 Kunlik umumiy natijalarni ko'rib borish uchun \"TOP 10 🏆\" tugmasini bosing.\n\n"
-        "👇 Quyidagi tugmalardan foydalaning:"
+        "📑 Mening hisobim\n\n"
+        f"👤 Ism: {u.get('name','') or '-'}\n"
+        f"👤 Familiya: {u.get('surname','') or '-'}\n"
+        f"📞 Tel: {u.get('phone','') or '-'}\n\n"
+        f"👥 Taklif qilganlar: {u.get('refs',0)} ta\n"
+        f"🔗 Shaxsiy link: {personal_link}"
     )
+    await update.message.reply_text(text, reply_markup=MENU_KB)
 
-    await update.message.reply_text(text, reply_markup=menu_kb)
+async def top10(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    data = load_data()
+    users = data.get("users", {})
+
+    # sort by refs desc
+    sorted_users = sorted(users.items(), key=lambda kv: kv[1].get("refs", 0), reverse=True)
+    top = sorted_users[:10]
+
+    if not top:
+        await update.message.reply_text("Hali natijalar yo‘q.", reply_markup=MENU_KB)
+        return
+
+    lines = ["🏆 TOP 10🏆\n"]
+    for i, (uid, info) in enumerate(top, start=1):
+        name = (info.get("name") or "").strip()
+        surname = (info.get("surname") or "").strip()
+        full = (name + " " + surname).strip() or f"ID:{uid}"
+        lines.append(f"{i}) {full} — {info.get('refs',0)} ball")
+
+    await update.message.reply_text("\n".join(lines), reply_markup=MENU_KB)
+
+async def gifts(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    text = (
+        "🎁 Sovg'alar:\n\n"
+        "🥇 1-o‘rin — Tecno Spark 30C smartfoni\n"
+        "🥈 2-o‘rin — Mi kolonkasi\n"
+        "🥉 3-o‘rin — Zamonaviy ryugzak\n\n"
+        "📅 9-mart kuni 14:00 — JONLI EFIR orqali g‘oliblar aniqlanadi."
+    )
+    await update.message.reply_text(text, reply_markup=MENU_KB)
+
+async def guide(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(RULES_TEXT, reply_markup=MENU_KB)
 
 # ====== FASTAPI APP (WEB FORM + WEBHOOK) ======
 app = FastAPI()
@@ -231,18 +304,21 @@ async def register_get(uid: int, sig: str):
     return HTMLResponse(html)
 
 @app.post("/register", response_class=HTMLResponse)
-async def register_post(uid: int = Form(...), sig: str = Form(...), name: str = Form(...), surname: str = Form(...)):
+async def register_post(
+    uid: int = Form(...),
+    sig: str = Form(...),
+    name: str = Form(...),
+    surname: str = Form(...)
+):
     if not verify_uid(uid, sig):
         return HTMLResponse("<h3>❌ Noto‘g‘ri link</h3>", status_code=403)
 
-    # Saqlab qo'yamiz
     data = load_data()
     u = get_user(data, uid)
     u["name"] = name.strip()
     u["surname"] = surname.strip()
     save_data(data)
 
-    # Telegramga xabar + contact tugma
     contact_kb = ReplyKeyboardMarkup(
         [[KeyboardButton("📱 Raqamimni ulashish", request_contact=True)]],
         resize_keyboard=True,
@@ -278,14 +354,21 @@ async def on_startup():
 
     tg_app = Application.builder().token(BOT_TOKEN).build()
 
+    # core flow
     tg_app.add_handler(CommandHandler("start", start))
     tg_app.add_handler(CallbackQueryHandler(check_join, pattern="^check$"))
     tg_app.add_handler(MessageHandler(filters.CONTACT, got_contact))
 
+    # menu buttons
+    tg_app.add_handler(MessageHandler(filters.TEXT & filters.Regex("^Mening shaxsiy linkim 🔗$"), my_link))
+    tg_app.add_handler(MessageHandler(filters.TEXT & filters.Regex("^Mening hisobim 📑$"), my_account))
+    tg_app.add_handler(MessageHandler(filters.TEXT & filters.Regex("^TOP 10🏆$"), top10))
+    tg_app.add_handler(MessageHandler(filters.TEXT & filters.Regex("^Sovg'alar 🎁$"), gifts))
+    tg_app.add_handler(MessageHandler(filters.TEXT & filters.Regex("^Qo'llanma 🗂$"), guide))
+
     await tg_app.initialize()
     await tg_app.start()
 
-    # webhook o'rnatamiz
     await tg_app.bot.set_webhook(f"{BASE_URL}/telegram")
 
 @app.on_event("shutdown")

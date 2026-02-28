@@ -40,19 +40,15 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 text = (
     "🎉  Kutib oling aloo'dan MEGA KONKURS - aloofest\n\n"
-    
     "Keling, endi sovg'alar ro'yxati bilan tanishtiraman👇\n\n"
     "🎁 TOP 3 talik uchun Sovg'alar:\n"
     "Ko'proq do'stingizni taklif qiling va qimmatbaho sovg'alardan birini yutib oling!\n\n"
-    
     "🥇 1-o‘rin — Tecno Spark 30C smartfoni\n"
     "🥈 2-o‘rin — Mi kolonkasi\n"
     "🥉 3-o‘rin — Zamonaviy ryugzak\n\n"
-    
     "📅 Sovg'alar g'oliblari 9-mart kuni soat 14:00da\n"
     "hammaning ko'z o'ngida, JONLI EFIR orqali aniqlaymiz.\n\n"
     "Hammaga omad 🍀\n\n"
-    
     "📺 Birinchi qadam: kanalimizga obuna bo'ling 👇"
 )
 

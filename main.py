@@ -145,8 +145,8 @@ async def got_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
     save_data(data)
 
     async def got_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not update.message or not update.message.contact:
-        return
+        if not update.message or not update.message.contact:
+            return
 
     user_id = update.effective_user.id
     phone = update.message.contact.phone_number

@@ -243,12 +243,22 @@ async def top10(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def gifts(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = (
-        "🎁 Sovg'alar:\n\n"
+        "Aziz xotin-qizlar bayrami munosabati bilan ajoyib sovg‘alar tayyorladik! 💙\n\n"
+        "🎁 Sovg‘alar:\n\n"
         "🥇 1-o‘rin — Tecno Spark 30C smartfoni\n"
         "🥈 2-o‘rin — Mi kolonkasi\n"
         "🥉 3-o‘rin — Zamonaviy ryugzak\n\n"
-        "📅 9-mart kuni 14:00 — JONLI EFIR orqali g‘oliblar aniqlanadi."
+        "Ishtirok etish juda oson 👇\n\n"
+        "1️⃣ @aloo_uzb kanaliga obuna bo‘ling\n"
+        "2️⃣ @aloofest_bot ro'yhatdan o'ting\n"
+        "3️⃣ Do‘stlaringizni taklif qiling va imkoniyatingizni oshiring!\n\n"
+        "📆 1-martdan 8-martgacha\n"
+        "🏆 9-mart kuni jonli efirda g‘oliblarni aniqlaymiz!\n\n"
+        "⚡️ Qancha ko‘p do‘st taklif qilsangiz — yutish ehtimolingiz shuncha yuqori!\n\n"
+        "Omad tilaymiz! 🎉\n\n"
+        "aloo — texno hayotga ulanish 💙"
     )
+
     await update.message.reply_text(text, reply_markup=MENU_KB)
 
 async def guide(update: Update, context: ContextTypes.DEFAULT_TYPE):

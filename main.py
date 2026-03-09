@@ -609,10 +609,30 @@ def contest_keyboard(user_id: int) -> InlineKeyboardMarkup:
     register_url = f"{BASE_URL}/register?uid={user_id}&sig={sig}"
 
     kb = InlineKeyboardBuilder()
-    kb.row(InlineKeyboardButton(text="📢 Kanalga obuna bo‘lish", url=f"https://t.me/{CHANNEL_USERNAME}"))
-    kb.row(InlineKeyboardButton(text="🤖 Onlayn do‘kon /start bosing", url=SHOP_BOT_URL))
-    kb.row(InlineKeyboardButton(text="📝 Ro‘yxatdan o‘tish", url=register_url))
-    kb.row(InlineKeyboardButton(text="✅ Tekshirish", callback_data="contest_check"))
+    kb.row(
+        InlineKeyboardButton(
+            text="📢 Kanalga obuna bo‘lish",
+            url="https://t.me/aloo_uzb"
+        )
+    )
+    kb.row(
+        InlineKeyboardButton(
+            text="🤖 Onlayn do‘kon /start bosing",
+            url="https://t.me/aloouz_bot"
+        )
+    )
+    kb.row(
+        InlineKeyboardButton(
+            text="📝 Ro‘yxatdan o‘tish",
+            url=register_url
+        )
+    )
+    kb.row(
+        InlineKeyboardButton(
+            text="✅ Tekshirish",
+            callback_data="contest_check"
+        )
+    )
     return kb.as_markup()
 
 

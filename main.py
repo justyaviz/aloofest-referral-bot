@@ -1,9 +1,13 @@
-import os, json, hmac, hashlib, csv, io
+import os
+import json
+import hmac
+import hashlib
+import csv
+import io
 from typing import Optional
 
 from fastapi import FastAPI, Request, Form
 from fastapi.responses import HTMLResponse, PlainTextResponse
-
 from telegram import (
     Update,
     InlineKeyboardButton,
@@ -26,25 +30,106 @@ from telegram.ext import (
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 CHANNEL_USERNAME = os.getenv("CHANNEL_USERNAME")  # masalan: @aloo_uzb
 BASE_URL = os.getenv("BASE_URL")  # masalan: https://xxx.up.railway.app
-SECRET_KEY = os.getenv("SECRET_KEY", "change-me")  # kuchliroq qo'ying!
+SECRET_KEY = os.getenv("SECRET_KEY", "change-me")
 
 DATA_FILE = "data.json"
 
 # =========================
-# ADMIN (sening ID shu yerda)
+# ADMIN
 # =========================
-DEFAULT_ADMIN_IDS = {5465377318}  # <- sening ID
+DEFAULT_ADMIN_IDS = {5465377318}
 ADMIN_IDS = set(DEFAULT_ADMIN_IDS)
 
-# xohlasang Railway Variables bilan ham qo‘shib yuboradi: ADMIN_IDS=111,222
 ADMIN_IDS_RAW = os.getenv("ADMIN_IDS", "")
 for x in ADMIN_IDS_RAW.split(","):
     x = x.strip()
     if x.isdigit():
         ADMIN_IDS.add(int(x))
 
+
 def is_admin(user_id: int) -> bool:
     return user_id in ADMIN_IDS
+
+
+# =========================
+# REGIONS / DISTRICTS
+# =========================
+REGION_DISTRICTS = {
+    "Toshkent shahri": [
+        "Bektemir", "Chilonzor", "Yakkasaroy", "Mirobod", "Mirzo Ulug‘bek",
+        "Olmazor", "Sergeli", "Shayxontohur", "Uchtepa", "Yunusobod", "Yashnobod"
+    ],
+    "Toshkent вилояти": [
+        "Bekobod", "Bo‘ka", "Bo‘stonliq", "Chinoz", "Qibray", "Ohangaron",
+        "Oqqo‘rg‘on", "Parkent", "Piskent", "Quyi Chirchiq", "O‘rta Chirchiq",
+        "Yangiyo‘l", "Yuqori Chirchiq", "Zangiota", "Angren", "Olmaliq", "Chirchiq",
+        "Nurafshon", "Bekobod shahri", "Ohangaron shahri", "Yangiyo‘l shahri"
+    ],
+    "Andijon": [
+        "Andijon shahri", "Andijon tumani", "Asaka", "Baliqchi", "Bo‘z",
+        "Buloqboshi", "Izboskan", "Jalaquduq", "Xo‘jaobod", "Marhamat",
+        "Oltinko‘l", "Paxtaobod", "Qo‘rg‘ontepa", "Shahrixon", "Ulug‘nor"
+    ],
+    "Farg‘ona": [
+        "Farg‘ona shahri", "Qo‘qon", "Marg‘ilon", "Oltiariq", "Bag‘dod",
+        "Beshariq", "Buvayda", "Dang‘ara", "Farg‘ona tumani", "Furqat",
+        "O‘zbekiston", "Quva", "Quvasoy", "Rishton", "So‘x", "Toshloq",
+        "Uchko‘prik", "Yozyovon"
+    ],
+    "Namangan": [
+        "Namangan shahri", "Chortoq", "Chust", "Kosonsoy", "Mingbuloq",
+        "Namangan tumani", "Norin", "Pop", "To‘raqo‘rg‘on", "Uchqo‘rg‘on",
+        "Uychi", "Yangiqo‘rg‘on"
+    ],
+    "Samarqand": [
+        "Samarqand shahri", "Bulung‘ur", "Ishtixon", "Jomboy", "Kattaqo‘rg‘on",
+        "Kattaqo‘rg‘on shahri", "Narpay", "Nurobod", "Oqdaryo", "Paxtachi",
+        "Payariq", "Pastdarg‘om", "Qo‘shrabot", "Samarqand tumani", "Toyloq",
+        "Urgut"
+    ],
+    "Buxoro": [
+        "Buxoro shahri", "Buxoro tumani", "G‘ijduvon", "Jondor", "Kogon",
+        "Kogon shahri", "Olot", "Peshku", "Qorako‘l", "Qorovulbozor",
+        "Romitan", "Shofirkon", "Vobkent"
+    ],
+    "Qashqadaryo": [
+        "Qarshi shahri", "Chiroqchi", "Dehqonobod", "G‘uzor", "Kasbi",
+        "Kitob", "Koson", "Mirishkor", "Muborak", "Nishon",
+        "Qamashi", "Qarshi tumani", "Shahrisabz", "Shahrisabz tumani",
+        "Yakkabog‘"
+    ],
+    "Surxondaryo": [
+        "Termiz shahri", "Angor", "Bandixon", "Boysun", "Denov",
+        "Jarqo‘rg‘on", "Muzrabot", "Oltinsoy", "Qiziriq", "Qumqo‘rg‘on",
+        "Sariosiyo", "Sherobod", "Sho‘rchi", "Termiz tumani", "Uzun"
+    ],
+    "Xorazm": [
+        "Urganch shahri", "Bog‘ot", "Gurlan", "Hazorasp", "Xiva",
+        "Xiva shahri", "Xonqa", "Qo‘shko‘pir", "Shovot", "Urganch tumani",
+        "Yangiariq", "Yangibozor"
+    ],
+    "Navoiy": [
+        "Navoiy shahri", "Zarafshon", "Konimex", "Karmana", "Navbahor",
+        "Nurota", "Qiziltepa", "Tomdi", "Uchquduq", "Xatirchi"
+    ],
+    "Jizzax": [
+        "Jizzax shahri", "Arnasoy", "Baxmal", "Do‘stlik", "Forish",
+        "G‘allaorol", "Jizzax tumani", "Mirzacho‘l", "Paxtakor",
+        "Yangiobod", "Zafarobod", "Zarbdor", "Zomin"
+    ],
+    "Sirdaryo": [
+        "Guliston shahri", "Boyovut", "Guliston tumani", "Mirzaobod",
+        "Oqoltin", "Sardoba", "Sayxunobod", "Shirin", "Sirdaryo",
+        "Xovos", "Yangiyer"
+    ],
+    "Qoraqalpog‘iston": [
+        "Nukus shahri", "Amudaryo", "Beruniy", "Chimboy", "Ellikqal’a",
+        "Kegeyli", "Mo‘ynoq", "Nukus tumani", "Qanliko‘l", "Qo‘ng‘irot",
+        "Qorao‘zak", "Shumanay", "Taxtako‘pir", "To‘rtko‘l", "Xo‘jayli"
+    ]
+}
+
+REGION_OPTIONS = sorted(REGION_DISTRICTS.keys())
 
 
 # =========================
@@ -56,9 +141,11 @@ def load_data():
     with open(DATA_FILE, "r", encoding="utf-8") as f:
         return json.load(f)
 
+
 def save_data(data):
     with open(DATA_FILE, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
+
 
 def get_user(data, user_id: int):
     uid = str(user_id)
@@ -70,19 +157,23 @@ def get_user(data, user_id: int):
             "name": "",
             "surname": "",
             "phone": "",
+            "region": "",
+            "district": "",
         }
     return data["users"][uid]
 
 
 # =========================
-# SIGN/VERIFY
+# HELPERS
 # =========================
 def sign_uid(uid: int) -> str:
     msg = str(uid).encode()
     return hmac.new(SECRET_KEY.encode(), msg, hashlib.sha256).hexdigest()
 
+
 def verify_uid(uid: int, sig: str) -> bool:
     return hmac.compare_digest(sign_uid(uid), sig or "")
+
 
 def full_name(info: dict, fallback: str = "Ishtirokchi") -> str:
     name = (info.get("name") or "").strip()
@@ -90,42 +181,60 @@ def full_name(info: dict, fallback: str = "Ishtirokchi") -> str:
     full = (name + " " + surname).strip()
     return full if full else fallback
 
+
 def is_registered(u: dict) -> bool:
-    return bool((u.get("name") or "").strip() and (u.get("surname") or "").strip() and (u.get("phone") or "").strip())
+    return bool(
+        (u.get("name") or "").strip()
+        and (u.get("surname") or "").strip()
+        and (u.get("phone") or "").strip()
+    )
+
+
+def build_sorted_items(data):
+    users = data.get("users", {})
+    items = []
+    for uid, info in users.items():
+        refs = int(info.get("refs", 0) or 0)
+        items.append(
+            (
+                int(uid),
+                full_name(info, fallback=f"ID:{uid}"),
+                refs,
+                (info.get("phone") or "").strip(),
+            )
+        )
+    items.sort(key=lambda x: x[2], reverse=True)
+    return items
 
 
 # =========================
 # UI TEXTS
 # =========================
 RULES_TEXT = (
-    "❓ Tanishlarni qanday qo'shish kerak va Ballar qanday hisoblanadi\n\n"
-    "👥 Sizga alohida \"unikal link\" beriladi va o'sha link orqali kanalga qo'shilgan do'stlaringiz uchun +1 ball beriladi.\n\n"
-    "TOP 3 talik uchun Sovg'alar qanday taqdim qilinadi:\n\n"
-    "Eng ko'p tanishini qo'shgan ishtirokchiga 1-o'rindagi sovg'amiz va shu ketma-ketlikda 3-o'ringacha qimmatbaho sovg'alar beriladi. "
-    "Siz kunlik o'z o'rningizni ko'rib borishingiz mumkin bo'ladi. 9-mart kuni soat 14:00 da Jonli Efir orqali G'oliblarni aniqlaymiz.\n\n"
-    "O'yin qoidalari va ball to'plash usullari bilan yaxshilab tanishing. Faollik ko'rsating, vazifalarni bajaring va o'yin davomida kafolatlangan sovg'alarni qo'lga kiriting.\n\n"
-    "⚠️ Konkurs davomida sizning linkingiz orqali qo'shilgan ishtirokchilar \"@aloo_uzb\" kanalidan chiqib ketmasligi kerak.\n\n"
-    "🔸 Do'stlarni taklif qilish uchun maxsus linkingizni \"Mening shaxsiy linkim 🔗\" tugmasini bosish orqali olishingiz mumkin.\n"
-    "🔸 Nechta do'stingiz qo'shilganini bilish uchun \"Mening hisobim 📑\" tugmasini bosing.\n"
-    "🔸 Kunlik umumiy natijalarni ko'rib borish uchun \"TOP 10🏆\" tugmasini bosing.\n\n"
-    "👇 Quyidagi tugmalardan foydalaning:"
+    "🎯 Sizda 2 xil yutish imkoniyati bor:\n\n"
+    "1️⃣ TOP 5 ga kirish\n"
+    "🎁 TOP 5 talik uchun sovg‘alar keyinroq e'lon qilinadi.\n"
+    "Ko‘proq do‘st taklif qiling va qimmatbaho sovg‘alardan birini yutib oling!\n\n"
+    "2️⃣ Random o‘yini\n"
+    "Kamida 5 ta do‘st taklif qiling va random o‘yinda ishtirok eting.\n\n"
+    "📊 Kanalimizga 5 ta odam qo‘shgan barcha ishtirokchilar orasidan "
+    "har hafta RANDOM orqali 1 ta sovg‘a taqdim qilinadi 🤩\n\n"
+    "📌 Konkurs qoidalari:\n"
+    "• Do‘stlaringiz sizning linkingiz orqali botga kirishi kerak\n"
+    "• Kanalga obuna bo‘lishi shart\n"
+    "• Kanalni tark etganlar hisobga olinmaydi\n\n"
+    "👇 Quyidagi tugmalar orqali konkursni kuzatib boring"
 )
 
 GIFTS_TEXT = (
-    "Aziz xotin-qizlar bayrami munosabati bilan ajoyib sovg‘alar tayyorladik! 💙\n\n"
-    "🎁 Sovg‘alar:\n\n"
-    "🥇 1-o‘rin — Tecno Spark 30C smartfoni\n"
-    "🥈 2-o‘rin — Mi kolonkasi\n"
-    "🥉 3-o‘rin — Zamonaviy ryugzak\n\n"
-    "Ishtirok etish juda oson 👇\n\n"
-    "1️⃣ @aloo_uzb kanaliga obuna bo‘ling\n"
-    "2️⃣ @aloofest_bot ro'yhatdan o'ting\n"
-    "3️⃣ Do‘stlaringizni taklif qiling va imkoniyatingizni oshiring!\n\n"
-    "📆 1-martdan 8-martgacha\n"
-    "🏆 9-mart kuni jonli efirda g‘oliblarni aniqlaymiz!\n\n"
-    "⚡️ Qancha ko‘p do‘st taklif qilsangiz — yutish ehtimolingiz shuncha yuqori!\n\n"
-    "Omad tilaymiz! 🎉\n\n"
-    "aloo — texno hayotga ulanish 💙"
+    "🎯 Sizda 2 xil yutish imkoniyati bor:\n\n"
+    "1️⃣ TOP 5 ga kirish\n"
+    "🎁 TOP 5 talik uchun sovg‘alar keyinroq e'lon qilinadi.\n"
+    "Ko‘proq do‘st taklif qiling va qimmatbaho sovg‘alardan birini yutib oling!\n\n"
+    "2️⃣ Random o‘yini\n"
+    "Kamida 5 ta do‘st taklif qiling va random o‘yinda ishtirok eting.\n\n"
+    "📊 Kanalimizga 5 ta odam qo‘shgan barcha ishtirokchilar orasidan "
+    "har hafta RANDOM orqali 1 ta sovg‘a taqdim qilinadi 🤩"
 )
 
 MENU_KB = ReplyKeyboardMarkup(
@@ -147,11 +256,13 @@ ADMIN_KB = ReplyKeyboardMarkup(
     resize_keyboard=True
 )
 
+
 # =========================
-# TELEGRAM HANDLERS
+# TELEGRAM COMMANDS
 # =========================
 async def cmd_id(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(f"🆔 Sizning ID: {update.effective_user.id}")
+
 
 async def cmd_admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id):
@@ -159,45 +270,53 @@ async def cmd_admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
     await update.message.reply_text("👑 Admin panel", reply_markup=ADMIN_KB)
 
+
+async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    context.user_data["admin_wait_broadcast"] = False
+    context.user_data["admin_wait_search"] = False
+    await update.message.reply_text(
+        "✅ Bekor qilindi.",
+        reply_markup=ADMIN_KB if is_admin(update.effective_user.id) else MENU_KB
+    )
+
+
+# =========================
+# USER FLOW
+# =========================
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     data = load_data()
     u = get_user(data, user.id)
 
-    # referral: /start <ref_id>
     if context.args:
         ref_id = context.args[0]
         if ref_id.isdigit() and int(ref_id) != user.id and u["ref_by"] is None:
             u["ref_by"] = int(ref_id)
             save_data(data)
 
-    # ✅ Admin bo‘lsa — admin panelni ko‘rsatamiz
     if is_admin(user.id):
         await update.message.reply_text("👑 Admin panel", reply_markup=ADMIN_KB)
         return
 
-    # ✅ ro'yxatdan o'tgan bo‘lsa — menyuga o‘tadi
     if is_registered(u):
         await update.message.reply_text(RULES_TEXT, reply_markup=MENU_KB)
         return
 
-    # ❌ Aks holda obuna tekshirish
     kb = [
-        [InlineKeyboardButton("✅📺 Kanalga obuna bo‘lish", url=f"https://t.me/{CHANNEL_USERNAME.replace('@','')}")],
+        [InlineKeyboardButton("✅📺 Kanalga obuna bo‘lish", url=f"https://t.me/{CHANNEL_USERNAME.replace('@', '')}")],
         [InlineKeyboardButton("✅ Obunani tekshirish", callback_data="check")],
     ]
 
     text = (
-        "🎉  Kutib oling aloo'dan MEGA KONKURS - aloofest\n\n"
-        "Keling, endi sovg'alar ro'yxati bilan tanishtiraman👇\n\n"
-        "🎁 TOP 3 talik uchun Sovg'alar:\n"
-        "Ko'proq do'stingizni taklif qiling va qimmatbaho sovg'alardan birini yutib oling!\n\n"
-        "🥇 1-o‘rin — Tecno Spark 30C smartfoni\n"
-        "🥈 2-o‘rin — Mi kolonkasi\n"
-        "🥉 3-o‘rin — Zamonaviy ryugzak\n\n"
-        "📅 Sovg'alar g'oliblari 9-mart kuni soat 14:00da hammaning ko'z o'ngida,\n"
-        "JONLI EFIR orqali aniqlaymiz.\n\n"
-        "Hammaga omad 🍀\n\n"
+        "🎉 Kutib oling aloo'dan MEGA KONKURS - aloofest\n\n"
+        "🎯 Sizda 2 xil yutish imkoniyati bor:\n\n"
+        "1️⃣ TOP 5 ga kirish\n"
+        "🎁 TOP 5 talik uchun sovg‘alar keyinroq e'lon qilinadi.\n"
+        "Ko‘proq do‘st taklif qiling va qimmatbaho sovg‘alardan birini yutib oling!\n\n"
+        "2️⃣ Random o‘yini\n"
+        "Kamida 5 ta do‘st taklif qiling va random o‘yinda ishtirok eting.\n\n"
+        "📊 Kanalimizga 5 ta odam qo‘shgan barcha ishtirokchilar orasidan "
+        "har hafta RANDOM orqali 1 ta sovg‘a taqdim qilinadi 🤩\n\n"
         "📺 Birinchi qadam: kanalimizga obuna bo'ling 👇"
     )
 
@@ -220,7 +339,7 @@ async def check_join(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if not is_joined:
         kb = [
-            [InlineKeyboardButton("✅📺 Kanalga obuna bo‘lish", url=f"https://t.me/{CHANNEL_USERNAME.replace('@','')}")],
+            [InlineKeyboardButton("✅📺 Kanalga obuna bo‘lish", url=f"https://t.me/{CHANNEL_USERNAME.replace('@', '')}")],
             [InlineKeyboardButton("✅ Obunani tekshirish", callback_data="check")],
         ]
         await q.edit_message_text(
@@ -229,7 +348,6 @@ async def check_join(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         return
 
-    # joined bir marta
     if not u["joined"]:
         u["joined"] = True
         if u["ref_by"]:
@@ -254,9 +372,11 @@ async def got_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     contact = update.message.contact
 
-    # faqat o'z raqamini qabul qilamiz
     if contact.user_id and contact.user_id != user_id:
-        await update.message.reply_text("❌ Iltimos, faqat o‘zingizning raqamingizni yuboring.", reply_markup=MENU_KB)
+        await update.message.reply_text(
+            "❌ Iltimos, faqat o‘zingizning raqamingizni yuboring.",
+            reply_markup=MENU_KB
+        )
         return
 
     phone = contact.phone_number
@@ -270,7 +390,7 @@ async def got_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 # =========================
-# MENU ACTIONS (USER)
+# USER MENU
 # =========================
 async def my_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
@@ -278,21 +398,16 @@ async def my_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
     personal_link = f"https://t.me/{me.username}?start={user_id}"
 
     caption = (
-        "Aziz xotin-qizlar bayrami munosabati bilan ajoyib sovg‘alar tayyorladik! 💙\n\n"
-        "🎁 Sovg‘alar:\n\n"
-        "🥇 1-o‘rin — Tecno Spark 30C smartfoni\n"
-        "🥈 2-o‘rin — Mi kolonkasi\n"
-        "🥉 3-o‘rin — Zamonaviy ryugzak\n\n"
-        "Ishtirok etish juda oson 👇\n\n"
-        "1️⃣ @aloo_uzb kanaliga obuna bo‘ling\n"
-        "2️⃣ @aloofest_bot ro'yhatdan o'ting\n"
-        "3️⃣ Do‘stlaringizni taklif qiling va imkoniyatingizni oshiring!\n\n"
-        "📆 1-martdan 8-martgacha\n"
-        "🏆 9-mart kuni jonli efirda g‘oliblarni aniqlaymiz!\n\n"
-        "⚡️ Qancha ko‘p do‘st taklif qilsangiz — yutish ehtimolingiz shuncha yuqori!\n\n"
+        "🎯 Sizda 2 xil yutish imkoniyati bor:\n\n"
+        "1️⃣ TOP 5 ga kirish\n"
+        "🎁 TOP 5 talik uchun sovg‘alar keyinroq e'lon qilinadi.\n"
+        "Ko‘proq do‘st taklif qiling va qimmatbaho sovg‘alardan birini yutib oling!\n\n"
+        "2️⃣ Random o‘yini\n"
+        "Kamida 5 ta do‘st taklif qiling va random o‘yinda ishtirok eting.\n\n"
+        "📊 Kanalimizga 5 ta odam qo‘shgan barcha ishtirokchilar orasidan "
+        "har hafta RANDOM orqali 1 ta sovg‘a taqdim qilinadi 🤩\n\n"
         "Konkursda qatnashish uchun quyidagi havola orqali o'ting 👇👇\n\n"
-        f"{personal_link}\n\n"
-        "aloo — texno hayotga ulanish 💙"
+        f"{personal_link}"
     )
 
     photo_path = "static/post.jpg"
@@ -300,10 +415,8 @@ async def my_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
         with open(photo_path, "rb") as photo:
             await update.message.reply_photo(photo=photo, caption=caption, reply_markup=MENU_KB)
     else:
-        await update.message.reply_text(
-            "❌ Rasm topilmadi: static/post.jpg\n\nRepo ichiga `static/post.jpg` qilib yuklang.",
-            reply_markup=MENU_KB,
-        )
+        await update.message.reply_text(caption, reply_markup=MENU_KB)
+
 
 async def my_account(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
@@ -313,15 +426,25 @@ async def my_account(update: Update, context: ContextTypes.DEFAULT_TYPE):
     me = await context.bot.get_me()
     personal_link = f"https://t.me/{me.username}?start={user_id}"
 
+    refs = int(u.get("refs", 0) or 0)
+    if refs >= 5:
+        random_status = "✅ Siz RANDOM o'yinda qatnashyapsiz"
+    else:
+        random_status = f"❌ Random uchun yana {5 - refs} ta do'st kerak"
+
     text = (
         "📑 Mening hisobim\n\n"
         f"👤 Ism: {(u.get('name') or '').strip() or '-'}\n"
         f"👤 Familiya: {(u.get('surname') or '').strip() or '-'}\n"
-        f"📞 Tel: {(u.get('phone') or '').strip() or '-'}\n\n"
-        f"👥 Taklif qilganlar: {int(u.get('refs',0) or 0)} ta\n"
+        f"📞 Tel: {(u.get('phone') or '').strip() or '-'}\n"
+        f"📍 Viloyat: {(u.get('region') or '').strip() or '-'}\n"
+        f"🏙 Tuman/Shahar: {(u.get('district') or '').strip() or '-'}\n\n"
+        f"👥 Taklif qilganlar: {refs} ta\n"
+        f"🎲 Random holati: {random_status}\n"
         f"🔗 Shaxsiy link: {personal_link}"
     )
     await update.message.reply_text(text, reply_markup=MENU_KB)
+
 
 async def top10(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
@@ -331,8 +454,7 @@ async def top10(update: Update, context: ContextTypes.DEFAULT_TYPE):
     items = []
     for uid, info in users.items():
         refs = int(info.get("refs", 0) or 0)
-        name = full_name(info, fallback=f"ID:{uid}")
-        items.append((int(uid), name, refs))
+        items.append((int(uid), full_name(info, fallback=f"ID:{uid}"), refs))
 
     items.sort(key=lambda x: x[2], reverse=True)
 
@@ -340,7 +462,7 @@ async def top10(update: Update, context: ContextTypes.DEFAULT_TYPE):
     medals = ["🥇", "🥈", "🥉"]
     nums = ["4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"]
 
-    lines = ["🏆 TOP 10 ISHTIROKCHILAR \n"]
+    lines = ["🏆 TOP 10 ISHTIROKCHILAR\n"]
     for i, (uid, name, refs) in enumerate(top):
         prefix = medals[i] if i < 3 else nums[i - 3]
         lines.append(f"{prefix} {name} - {refs} ta")
@@ -357,18 +479,19 @@ async def top10(update: Update, context: ContextTypes.DEFAULT_TYPE):
         my_rank = len(items) + 1
         my_refs = 0
 
-    lines.append("\n\n")
-    lines.append(f"Sizning o'rningiz: {my_rank}-o'rin ({my_refs} ta)\n\n")
+    lines.append("\n")
+    lines.append(f"Sizning o'rningiz: {my_rank}-o'rin ({my_refs} ta)\n")
     lines.append(
-        "Sizning urinishingiz yomon emas 😊\n"
-        "Yuqoriga ko‘tarilish uchun: \"Mening shaxsiy linkim 🔗\" ni tanishlaringizga yuboring.\n"
-        "Ular kanalga a’zo bo‘lsa — sizga +1 ball!"
+        "Sizning urinishingiz yomon emas yanada teparoq ko'tarilish uchun "
+        "shaxsiy linkingizni tanishlaringizga yuboring va ular kanalga qo'shilishi kerak, OMAD sizga 😊"
     )
 
     await update.message.reply_text("\n".join(lines), reply_markup=MENU_KB)
 
+
 async def gifts(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(GIFTS_TEXT, reply_markup=MENU_KB)
+
 
 async def guide(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(RULES_TEXT, reply_markup=MENU_KB)
@@ -388,24 +511,18 @@ async def admin_stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
     joined = sum(1 for _, u in users.items() if u.get("joined"))
     registered = sum(1 for _, u in users.items() if (u.get("name") or "").strip() and (u.get("surname") or "").strip())
     with_phone = sum(1 for _, u in users.items() if (u.get("phone") or "").strip())
+    random_ready = sum(1 for _, u in users.items() if int(u.get("refs", 0) or 0) >= 5)
 
     text = (
         "📊 Admin Statistika\n\n"
         f"👥 Jami user: {total}\n"
         f"✅ Kanalga a’zo bo‘lgan: {joined}\n"
-        f"📝 Ro‘yxatdan o‘tgan (ism+fam): {registered}\n"
+        f"📝 Ro‘yxatdan o‘tgan: {registered}\n"
         f"📞 Telefon yuborgan: {with_phone}\n"
+        f"🎲 Randomga chiqqanlar (5+): {random_ready}\n"
     )
     await update.message.reply_text(text, reply_markup=ADMIN_KB)
 
-def build_sorted_items(data):
-    users = data.get("users", {})
-    items = []
-    for uid, info in users.items():
-        refs = int(info.get("refs", 0) or 0)
-        items.append((int(uid), full_name(info, fallback=f"ID:{uid}"), refs, (info.get("phone") or "").strip()))
-    items.sort(key=lambda x: x[2], reverse=True)
-    return items
 
 async def admin_top10(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id):
@@ -418,6 +535,7 @@ async def admin_top10(update: Update, context: ContextTypes.DEFAULT_TYPE):
         lines.append(f"{i}) {name} — {refs} ta{extra}")
     await update.message.reply_text("\n".join(lines), reply_markup=ADMIN_KB)
 
+
 async def admin_top50(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id):
         return
@@ -428,11 +546,16 @@ async def admin_top50(update: Update, context: ContextTypes.DEFAULT_TYPE):
         lines.append(f"{i}) {name} — {refs} ta")
     await update.message.reply_text("\n".join(lines), reply_markup=ADMIN_KB)
 
+
 async def admin_search_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id):
         return
     context.user_data["admin_wait_search"] = True
-    await update.message.reply_text("🔎 Qidirish uchun ID yoki ism/familiya yozing.\nBekor qilish: /cancel", reply_markup=ADMIN_KB)
+    await update.message.reply_text(
+        "🔎 Qidirish uchun ID yoki ism/familiya yoki telefon yozing.\nBekor qilish: /cancel",
+        reply_markup=ADMIN_KB
+    )
+
 
 async def admin_search_receive(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id):
@@ -455,10 +578,12 @@ async def admin_search_receive(update: Update, context: ContextTypes.DEFAULT_TYP
         surname = (info.get("surname") or "").strip()
         phone = (info.get("phone") or "").strip()
         refs = int(info.get("refs", 0) or 0)
+        region = (info.get("region") or "").strip()
+        district = (info.get("district") or "").strip()
 
-        hay = f"{uid_s} {name} {surname} {phone}".lower()
+        hay = f"{uid_s} {name} {surname} {phone} {region} {district}".lower()
         if q in hay:
-            found.append((uid_s, name, surname, phone, refs))
+            found.append((uid_s, name, surname, phone, refs, region, district))
 
     if not found:
         await update.message.reply_text("❌ Hech narsa topilmadi.", reply_markup=ADMIN_KB)
@@ -466,11 +591,14 @@ async def admin_search_receive(update: Update, context: ContextTypes.DEFAULT_TYP
 
     found = found[:15]
     lines = ["✅ Topilganlar (max 15):\n"]
-    for uid_s, name, surname, phone, refs in found:
+    for uid_s, name, surname, phone, refs, region, district in found:
         full = (name + " " + surname).strip() or f"ID:{uid_s}"
-        lines.append(f"• {full} | 📞 {phone or '-'} | 🔥 {refs} ta | 🆔 {uid_s}")
+        lines.append(
+            f"• {full} | 📞 {phone or '-'} | 🔥 {refs} ta | 📍 {region or '-'} / {district or '-'} | 🆔 {uid_s}"
+        )
 
     await update.message.reply_text("\n".join(lines), reply_markup=ADMIN_KB)
+
 
 async def admin_broadcast_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id):
@@ -480,6 +608,7 @@ async def admin_broadcast_start(update: Update, context: ContextTypes.DEFAULT_TY
         "📢 Hammaga yuboriladigan MATNni yozing.\n\nBekor qilish: /cancel",
         reply_markup=ADMIN_KB,
     )
+
 
 async def admin_broadcast_receive(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id):
@@ -504,7 +633,11 @@ async def admin_broadcast_receive(update: Update, context: ContextTypes.DEFAULT_
         except Exception:
             fail += 1
 
-    await update.message.reply_text(f"✅ Yuborildi: {ok}\n❌ Yetmadi: {fail}", reply_markup=ADMIN_KB)
+    await update.message.reply_text(
+        f"✅ Yuborildi: {ok}\n❌ Yetmadi: {fail}",
+        reply_markup=ADMIN_KB
+    )
+
 
 async def admin_export_csv(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id):
@@ -515,7 +648,7 @@ async def admin_export_csv(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     output = io.StringIO()
     writer = csv.writer(output)
-    writer.writerow(["user_id", "name", "surname", "phone", "refs", "joined", "ref_by"])
+    writer.writerow(["user_id", "name", "surname", "phone", "region", "district", "refs", "joined", "ref_by"])
 
     for uid, info in users.items():
         writer.writerow([
@@ -523,6 +656,8 @@ async def admin_export_csv(update: Update, context: ContextTypes.DEFAULT_TYPE):
             (info.get("name") or "").strip(),
             (info.get("surname") or "").strip(),
             (info.get("phone") or "").strip(),
+            (info.get("region") or "").strip(),
+            (info.get("district") or "").strip(),
             int(info.get("refs", 0) or 0),
             bool(info.get("joined")),
             info.get("ref_by") or "",
@@ -536,24 +671,24 @@ async def admin_export_csv(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_markup=ADMIN_KB
     )
 
+
 async def admin_to_user_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id):
         return
     await update.message.reply_text("⬅️ Oddiy menyu", reply_markup=MENU_KB)
 
-async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    context.user_data["admin_wait_broadcast"] = False
-    context.user_data["admin_wait_search"] = False
-    await update.message.reply_text("✅ Bekor qilindi.", reply_markup=ADMIN_KB if is_admin(update.effective_user.id) else MENU_KB)
-
 
 # =========================
-# FASTAPI APP (WEB FORM + WEBHOOK)
+# FASTAPI
 # =========================
 app = FastAPI()
 tg_app: Optional[Application] = None
 
-FORM_HTML = """
+region_options_html = "\n".join(
+    [f'<option value="{r}">{r}</option>' for r in REGION_OPTIONS]
+)
+
+FORM_HTML = f"""
 <!doctype html>
 <html>
 <head>
@@ -561,14 +696,52 @@ FORM_HTML = """
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>Ro‘yxatdan o‘tish</title>
   <style>
-    body{font-family:Arial;background:#7fd1c7;margin:0;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px;}
-    .card{background:#fff;max-width:420px;width:100%;border-radius:18px;padding:26px;box-shadow:0 12px 40px rgba(0,0,0,.18);}
-    h2{margin:0 0 10px 0;}
-    p{margin:0 0 18px 0;color:#333;}
-    label{display:block;margin:14px 0 6px 0;font-weight:700;}
-    input{width:100%;padding:12px 12px;border:1px solid #ddd;border-radius:12px;font-size:16px;}
-    button{margin-top:18px;width:100%;padding:14px;border:0;border-radius:14px;background:#6fc6bb;font-size:16px;font-weight:800;cursor:pointer;}
-    .small{font-size:12px;color:#666;margin-top:10px;}
+    body {{
+      font-family: Arial, sans-serif;
+      background: #7fd1c7;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 20px;
+    }}
+    .card {{
+      background: #fff;
+      max-width: 420px;
+      width: 100%;
+      border-radius: 18px;
+      padding: 26px;
+      box-shadow: 0 12px 40px rgba(0,0,0,.18);
+    }}
+    h2 {{ margin: 0 0 10px 0; }}
+    p {{ margin: 0 0 18px 0; color: #333; }}
+    label {{ display: block; margin: 14px 0 6px 0; font-weight: 700; }}
+    input, select {{
+      width: 100%;
+      padding: 12px 12px;
+      border: 1px solid #ddd;
+      border-radius: 12px;
+      font-size: 16px;
+      box-sizing: border-box;
+      background: #fff;
+    }}
+    button {{
+      margin-top: 18px;
+      width: 100%;
+      padding: 14px;
+      border: 0;
+      border-radius: 14px;
+      background: #6fc6bb;
+      font-size: 16px;
+      font-weight: 800;
+      cursor: pointer;
+    }}
+    .small {{
+      font-size: 12px;
+      color: #666;
+      margin-top: 10px;
+    }}
   </style>
 </head>
 <body>
@@ -576,16 +749,61 @@ FORM_HTML = """
     <h2>🎉 Konkursga ro‘yxatdan o‘tish</h2>
     <p>Ma’lumotlaringizni to‘ldiring</p>
     <form method="POST" action="/register">
-      <input type="hidden" name="uid" value="{uid}"/>
-      <input type="hidden" name="sig" value="{sig}"/>
+      <input type="hidden" name="uid" value="{{uid}}"/>
+      <input type="hidden" name="sig" value="{{sig}}"/>
+
       <label>Ismingiz *</label>
       <input name="name" required placeholder="Ismingizni kiriting"/>
+
       <label>Familiyangiz *</label>
       <input name="surname" required placeholder="Familiyangizni kiriting"/>
+
+      <label>Viloyat *</label>
+      <select id="region" name="region" required>
+        <option value="">Viloyat tanlang</option>
+        {region_options_html}
+      </select>
+
+      <label>Tuman / Shahar *</label>
+      <select id="district" name="district" required>
+        <option value="">Avval viloyat tanlang</option>
+      </select>
+
       <button type="submit">Ro‘yxatdan o‘tish</button>
       <div class="small">Yuborgandan keyin Telegram botga qayting.</div>
     </form>
   </div>
+
+  <script>
+    const regionDistricts = {json.dumps(REGION_DISTRICTS, ensure_ascii=False)};
+    const regionSelect = document.getElementById('region');
+    const districtSelect = document.getElementById('district');
+
+    regionSelect.addEventListener('change', function() {{
+      const region = this.value;
+      districtSelect.innerHTML = '';
+
+      if (!region || !regionDistricts[region]) {{
+        const option = document.createElement('option');
+        option.value = '';
+        option.textContent = 'Avval viloyat tanlang';
+        districtSelect.appendChild(option);
+        return;
+      }}
+
+      const first = document.createElement('option');
+      first.value = '';
+      first.textContent = 'Tuman / Shahar tanlang';
+      districtSelect.appendChild(first);
+
+      regionDistricts[region].forEach(function(d) {{
+        const option = document.createElement('option');
+        option.value = d;
+        option.textContent = d;
+        districtSelect.appendChild(option);
+      }});
+    }});
+  </script>
 </body>
 </html>
 """
@@ -598,6 +816,7 @@ async def root():
 async def register_get(uid: int, sig: str):
     if not verify_uid(uid, sig):
         return HTMLResponse("<h3>❌ Noto‘g‘ri link</h3>", status_code=403)
+
     html = FORM_HTML.replace("{uid}", str(uid)).replace("{sig}", sig)
     return HTMLResponse(html)
 
@@ -606,15 +825,25 @@ async def register_post(
     uid: int = Form(...),
     sig: str = Form(...),
     name: str = Form(...),
-    surname: str = Form(...)
+    surname: str = Form(...),
+    region: str = Form(...),
+    district: str = Form(...)
 ):
     if not verify_uid(uid, sig):
         return HTMLResponse("<h3>❌ Noto‘g‘ri link</h3>", status_code=403)
+
+    if region not in REGION_DISTRICTS:
+        return HTMLResponse("<h3>❌ Noto‘g‘ri viloyat</h3>", status_code=400)
+
+    if district not in REGION_DISTRICTS[region]:
+        return HTMLResponse("<h3>❌ Noto‘g‘ri tuman/shahar</h3>", status_code=400)
 
     data = load_data()
     u = get_user(data, uid)
     u["name"] = name.strip()
     u["surname"] = surname.strip()
+    u["region"] = region.strip()
+    u["district"] = district.strip()
     save_data(data)
 
     contact_kb = ReplyKeyboardMarkup(
@@ -623,7 +852,6 @@ async def register_post(
         one_time_keyboard=True
     )
 
-    # Telegramga xabar
     if tg_app:
         await tg_app.bot.send_message(
             chat_id=uid,
@@ -631,8 +859,6 @@ async def register_post(
             reply_markup=contact_kb
         )
 
-    # Botga qaytish uchun link (webdan tez qaytadi)
-    # domainni bot username qilib olamiz
     bot_username = (await tg_app.bot.get_me()).username if tg_app else "aloofest_bot"
     return HTMLResponse(
         f"""
@@ -657,26 +883,20 @@ async def on_startup():
 
     tg_app = Application.builder().token(BOT_TOKEN).build()
 
-    # commands
     tg_app.add_handler(CommandHandler("start", start))
     tg_app.add_handler(CommandHandler("id", cmd_id))
     tg_app.add_handler(CommandHandler("admin", cmd_admin))
     tg_app.add_handler(CommandHandler("cancel", cancel))
 
-    # join check
     tg_app.add_handler(CallbackQueryHandler(check_join, pattern="^check$"))
-
-    # contact
     tg_app.add_handler(MessageHandler(filters.CONTACT, got_contact))
 
-    # user menu buttons
     tg_app.add_handler(MessageHandler(filters.TEXT & filters.Regex("^Mening shaxsiy linkim 🔗$"), my_link))
     tg_app.add_handler(MessageHandler(filters.TEXT & filters.Regex("^Mening hisobim 📑$"), my_account))
     tg_app.add_handler(MessageHandler(filters.TEXT & filters.Regex("^TOP 10🏆$"), top10))
     tg_app.add_handler(MessageHandler(filters.TEXT & filters.Regex("^Sovg'alar 🎁$"), gifts))
     tg_app.add_handler(MessageHandler(filters.TEXT & filters.Regex("^Qo'llanma 🗂$"), guide))
 
-    # admin menu buttons
     tg_app.add_handler(MessageHandler(filters.TEXT & filters.Regex("^📊 Statistika$"), admin_stats))
     tg_app.add_handler(MessageHandler(filters.TEXT & filters.Regex("^🏆 TOP 10 \\(admin\\)$"), admin_top10))
     tg_app.add_handler(MessageHandler(filters.TEXT & filters.Regex("^🏅 TOP 50 \\(admin\\)$"), admin_top50))
@@ -685,13 +905,11 @@ async def on_startup():
     tg_app.add_handler(MessageHandler(filters.TEXT & filters.Regex("^📥 Export CSV$"), admin_export_csv))
     tg_app.add_handler(MessageHandler(filters.TEXT & filters.Regex("^⬅️ Oddiy menyu$"), admin_to_user_menu))
 
-    # admin inputs (qidirish/broadcast) — oxirda tursin
     tg_app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, admin_search_receive))
     tg_app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, admin_broadcast_receive))
 
     await tg_app.initialize()
     await tg_app.start()
-
     await tg_app.bot.set_webhook(f"{BASE_URL}/telegram")
 
 @app.on_event("shutdown")

@@ -1,2 +1,4 @@
 aiogram==3.26.0
 aiosqlite==0.22.1
+aiohttp==3.10.11
+openpyxl==3.1.5

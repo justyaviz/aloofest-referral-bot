@@ -91,6 +91,15 @@ class Database:
             )
             """)
 
+            await db.execute("""
+            CREATE TABLE IF NOT EXISTS ads (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                title TEXT,
+                body TEXT,
+                created_at INTEGER
+            )
+            """)
+
             await db.commit()
 
             cur = await db.execute("SELECT COUNT(*) FROM prizes")
@@ -140,12 +149,6 @@ class Database:
         async with aiosqlite.connect(DB_PATH) as db:
             db.row_factory = aiosqlite.Row
             cur = await db.execute("SELECT * FROM users WHERE user_id = ?", (user_id,))
-            return await cur.fetchone()
-
-    async def get_user_by_fest(self, fest_id: str):
-        async with aiosqlite.connect(DB_PATH) as db:
-            db.row_factory = aiosqlite.Row
-            cur = await db.execute("SELECT * FROM users WHERE fest_id = ?", (fest_id,))
             return await cur.fetchone()
 
     async def next_fest_id(self) -> str:
@@ -407,6 +410,20 @@ class Database:
                   AND referral_count >= 3
                   AND diamonds >= 15
             """, (start_ts, end_ts))
+            return await cur.fetchall()
+
+    async def save_ad(self, title: str, body: str):
+        async with aiosqlite.connect(DB_PATH) as db:
+            await db.execute("""
+                INSERT INTO ads (title, body, created_at)
+                VALUES (?, ?, ?)
+            """, (title, body, int(time.time())))
+            await db.commit()
+
+    async def get_ads(self, limit: int = 10):
+        async with aiosqlite.connect(DB_PATH) as db:
+            db.row_factory = aiosqlite.Row
+            cur = await db.execute("SELECT * FROM ads ORDER BY id DESC LIMIT ?", (limit,))
             return await cur.fetchall()
 
 

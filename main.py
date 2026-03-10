@@ -285,6 +285,22 @@ async def check_subscription(call: CallbackQuery):
     )
     await call.answer("Tasdiqlandi")
 
+@dp.message(F.text == "🎟 PROMO")
+async def promo_stats(message: Message):
+    if not is_admin(message.from_user.id):
+        return
+
+    rows = await db.get_promo_stats()
+    if not rows:
+        await message.answer("PROMO statistika hozircha bo‘sh.")
+        return
+
+    text = "🎟 <b>PROMO statistika</b>\n\n"
+    for idx, row in enumerate(rows, start=1):
+        text += f"{idx}. {row['promo_branch']} — {row['promo_code']} — {row['total']} ta\n"
+
+    await message.answer(text)
+
 
 @dp.message(F.text == "👥 Do‘stlarni taklif qilish")
 async def referrals_menu(message: Message):

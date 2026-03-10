@@ -1,7 +1,18 @@
 import hmac
 import hashlib
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, KeyboardButton
-from config import CHANNEL_URL, SHOP_BOT_URL, BASE_URL, WEBAPP_SECRET, INSTAGRAM_MAIN_URL
+from aiogram.types import (
+    InlineKeyboardMarkup,
+    InlineKeyboardButton,
+    ReplyKeyboardMarkup,
+    KeyboardButton,
+)
+from config import (
+    CHANNEL_URL,
+    SHOP_BOT_URL,
+    BASE_URL,
+    WEBAPP_SECRET,
+    INSTAGRAM_MAIN_URL,
+)
 
 
 def sign_uid(uid: int) -> str:
@@ -44,6 +55,14 @@ def register_keyboard(user_id: int) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
         inline_keyboard=[
             [InlineKeyboardButton(text="🌐 RO‘YXATDAN O‘TISH", url=register_url)]
+        ]
+    )
+
+
+def after_registration_keyboard() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="🚀 BOSHLASH", callback_data="open_main_menu")]
         ]
     )
 

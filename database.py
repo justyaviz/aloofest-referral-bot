@@ -59,7 +59,6 @@ class Database:
             )
             """)
 
-            # eski bazalarda column bo'lmasa qo'shib ketadi
             for sql in [
                 "ALTER TABLE users ADD COLUMN phone TEXT",
                 "ALTER TABLE users ADD COLUMN phone_verified INTEGER DEFAULT 0",
@@ -274,6 +273,33 @@ class Database:
                 SET phone = ?, phone_verified = 1
                 WHERE user_id = ?
             """, (phone, user_id))
+            await db.commit()
+
+    async def add_points(self, user_id: int, points: int):
+        async with aiosqlite.connect(DB_PATH) as db:
+            await db.execute("""
+                UPDATE users
+                SET diamonds = COALESCE(diamonds, 0) + ?
+                WHERE user_id = ?
+            """, (points, user_id))
+            await db.commit()
+
+    async def add_referrals(self, user_id: int, refs: int):
+        async with aiosqlite.connect(DB_PATH) as db:
+            await db.execute("""
+                UPDATE users
+                SET referral_count = COALESCE(referral_count, 0) + ?
+                WHERE user_id = ?
+            """, (refs, user_id))
+            await db.commit()
+
+    async def set_ready_user(self, user_id: int, diamonds: int, refs: int):
+        async with aiosqlite.connect(DB_PATH) as db:
+            await db.execute("""
+                UPDATE users
+                SET diamonds = ?, referral_count = ?, registered = 1
+                WHERE user_id = ?
+            """, (diamonds, refs, user_id))
             await db.commit()
 
     async def seed_test_random_users(self):

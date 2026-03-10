@@ -613,11 +613,23 @@ def profile_actions_keyboard(user_id: int) -> InlineKeyboardMarkup:
     return kb.as_markup()
 
 
-def winner_keyboard(full_name: str) -> InlineKeyboardMarkup:
-    share_text = f"🎉 aloo random g‘olibi:\n\n👤 {full_name}"
+def winner_keyboard(phone: str, full_name: str) -> InlineKeyboardMarkup:
+    clean_phone = "".join(ch for ch in (phone or "") if ch.isdigit() or ch == "+")
+    share_text = f"🎉 aloo random g‘olibi:\n\n👤 {full_name}\n📞 {phone}"
+
     kb = InlineKeyboardBuilder()
+
+    # tel: ba'zi clientlarda ishlaydi, ishlamasa oddiy share baribir qoladi
+    if clean_phone:
+        kb.row(
+            InlineKeyboardButton(text="📞 Qo‘ng‘iroq qilish", url=f"tel:{clean_phone}")
+        )
+
     kb.row(
-        InlineKeyboardButton(text="📤 Ulashish", url=f"https://t.me/share/url?url=&text={share_text}")
+        InlineKeyboardButton(
+            text="📤 Ulashish",
+            url=f"https://t.me/share/url?url=&text={share_text}"
+        )
     )
     return kb.as_markup()
 
@@ -1474,7 +1486,8 @@ async def random_draw_handler(callback: CallbackQuery, bot: Bot):
     await callback.answer("Random boshlandi")
 
     progress_msg = await callback.message.edit_text(
-        "🎲 <b>Random orqali g‘olib aniqlanmoqda...</b>\n\n⏳ Loading: <b>0%</b>"
+        "🎲 <b>Random orqali g‘olib aniqlanmoqda...</b>\n\n"
+        "⏳ Loading: <b>0%</b>"
     )
 
     steps = list(range(0, 101, 5))
@@ -1484,45 +1497,64 @@ async def random_draw_handler(callback: CallbackQuery, bot: Bot):
         await asyncio.sleep(sleep_time)
         try:
             await progress_msg.edit_text(
-                f"🎲 <b>Random orqali g‘olib aniqlanmoqda...</b>\n\n⏳ Loading: <b>{p}%</b>"
+                "🎲 <b>Random orqali g‘olib aniqlanmoqda...</b>\n\n"
+                f"⏳ Loading: <b>{p}%</b>"
             )
         except TelegramBadRequest:
             pass
 
     winner = random.choice(eligible)
-    full_name = f"{winner['first_name'] or ''} {winner['last_name'] or ''}".strip() or "Noma’lum"
+
+    full_name = f"{winner['first_name'] or ''} {winner['last_name'] or ''}".strip()
+    if not full_name:
+        full_name = "Noma’lum"
+
+    phone = winner["phone"] or "Kiritilmagan"
+    region = winner["region"] or "Kiritilmagan"
+    district = winner["district"] or "Kiritilmagan"
+    diamonds = winner["diamonds"] or 0
 
     await save_random_history(
-        winner["user_id"],
-        full_name,
-        state.start_date,
-        state.end_date,
-        len(eligible),
-        admin_id
+        winner_user_id=winner["user_id"],
+        winner_name=full_name,
+        start_date=state.start_date,
+        end_date=state.end_date,
+        participants_count=len(eligible),
+        admin_id=admin_id
     )
 
-    await progress_msg.edit_text(
-        f"🏆 <b>G‘olib aniqlandi!</b>\n\n"
-        f"👤 Ism-familiya: <b>{esc(full_name)}</b>\n"
-        f"📍 Hudud: <b>{esc(winner['region'] or '')}, {esc(winner['district'] or '')}</b>\n"
-        f"💎 Ball: <b>{winner['diamonds']}</b>\n\n"
-        f"📅 Davr: <b>{state.start_date}</b> — <b>{state.end_date}</b>\n"
-        f"👥 Ishtirokchilar: <b>{len(eligible)}</b>",
-        reply_markup=winner_keyboard(full_name)
+    winner_text = (
+        "🏆 <b>G‘olib aniqlandi!</b>\n\n"
+        f"👤 <b>Ism-familiya:</b> {esc(full_name)}\n"
+        f"📞 <b>Telefon raqami:</b> {esc(phone)}\n"
+        f"📍 <b>Hudud:</b> {esc(region)}, {esc(district)}\n"
+        f"💎 <b>Balli:</b> {diamonds}\n\n"
+        f"📅 <b>Davr:</b> {state.start_date} — {state.end_date}\n"
+        f"👥 <b>Ishtirokchilar soni:</b> {len(eligible)}"
     )
+
+    try:
+        await progress_msg.edit_text(
+            winner_text,
+            reply_markup=winner_keyboard(phone, full_name)
+        )
+    except Exception as e:
+        await callback.message.answer(
+            f"❌ G‘olibni chiqarishda xatolik bo‘ldi:\n<code>{esc(str(e))}</code>"
+        )
+        return
 
     try:
         await bot.send_message(
             winner["user_id"],
             "🎉 <b>Tabriklaymiz!</b>\n\n"
-            "Siz aloo random o‘yinida g‘olib bo‘ldingiz.\n"
-            "Tez orada siz bilan bog‘lanamiz."
+            "Siz aloo random o‘yinida g‘olib bo‘ldingiz!\n"
+            "Tez orada siz bilan bog‘lanamiz. 📞"
         )
     except Exception:
         pass
 
     RANDOM_STATE.pop(admin_id, None)
-
 
 # =========================
 # FALLBACK

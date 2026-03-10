@@ -392,10 +392,17 @@ async def register_page(request: web.Request):
 
 
 async def register_api(request: web.Request):
-    data = await request.json()
+    try:
+        data = await request.json()
+    except Exception:
+        return web.json_response({"ok": False, "error": "Noto‘g‘ri so‘rov"})
 
-    uid = int(data.get("uid", 0))
-    sig = data.get("sig", "")
+    try:
+        uid = int(data.get("uid", 0))
+    except Exception:
+        uid = 0
+
+    sig = str(data.get("sig", ""))
     full_name = str(data.get("full_name", "")).strip()
     instagram = str(data.get("instagram", "")).strip().replace("@", "")
     region = str(data.get("region", "")).strip()
@@ -420,14 +427,17 @@ async def register_api(request: web.Request):
     if not user:
         return web.json_response({"ok": False, "error": "Foydalanuvchi topilmadi. Avval botda /start bosing."})
 
-    ok, result, promo_branch = await db.register_user(
-        user_id=uid,
-        full_name=full_name,
-        instagram=instagram,
-        region=region,
-        district=district,
-        promo_code=promo_code or None
-    )
+    try:
+        ok, result, promo_branch = await db.register_user(
+            user_id=uid,
+            full_name=full_name,
+            instagram=instagram,
+            region=region,
+            district=district,
+            promo_code=promo_code or None
+        )
+    except Exception as e:
+        return web.json_response({"ok": False, "error": f"Server xatosi: {str(e)}"})
 
     if not ok:
         return web.json_response({"ok": False, "error": result})
@@ -439,20 +449,23 @@ async def register_api(request: web.Request):
             f"\n🏬 Filial: <b>{html.escape(promo_branch)}</b>"
         )
 
+    try:
         await send_bot_message(
-        uid,
-        f"🎉 <b>Tabriklaymiz, {html.escape(full_name)}!</b>\n\n"
-        f"Siz konkurs ishtirokchisiga aylandingiz va <b>+5 ball</b> qo‘lga kiritdingiz.\n"
-        f"🆔 Sizning FEST ID raqamingiz: <b>{result}</b>\n"
-        f"{promo_text}\n\n"
-        f"Endi do‘stlaringizni taklif qiling va g‘olib bo‘lish imkoniyatingizni maksimal oshiring.\n\n"
-        f"Savollar tug‘ilsa, <b>YORDAM</b> menyusi orqali adminga savolingizni yuboring yoki <b>@aloouz_chat</b> ga bog‘laning.",
-        reply_markup={
-            "inline_keyboard": [
-                [{"text": "🚀 BOSHLASH", "callback_data": "open_main_menu"}]
-            ]
-        }
-    )
+            uid,
+            f"🎉 <b>Tabriklaymiz, {html.escape(full_name)}!</b>\n\n"
+            f"Siz konkurs ishtirokchisiga aylandingiz va <b>+5 ball</b> qo‘lga kiritdingiz.\n"
+            f"🆔 Sizning FEST ID raqamingiz: <b>{result}</b>\n"
+            f"{promo_text}\n\n"
+            f"Endi <b>🚀 BOSHLASH</b> tugmasini bosing va keyingi bosqichga o‘ting.\n\n"
+            f"Savollar tug‘ilsa, <b>YORDAM</b> menyusi orqali adminga savolingizni yuboring yoki <b>@aloouz_chat</b> ga bog‘laning.",
+            reply_markup={
+                "inline_keyboard": [
+                    [{"text": "🚀 BOSHLASH", "callback_data": "open_main_menu"}]
+                ]
+            }
+        )
+    except Exception:
+        pass
 
     msg = f"🎉 Tabriklaymiz! Siz muvaffaqiyatli ro‘yxatdan o‘tdingiz. FEST ID: {result}."
     if promo_branch:
@@ -460,6 +473,7 @@ async def register_api(request: web.Request):
     msg += " Endi ORQAGA QAYTISH tugmasini bosib botga qayting."
 
     return web.json_response({"ok": True, "message": msg})
+
 
 async def setup_web_server():
     app = web.Application()

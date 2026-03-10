@@ -32,7 +32,7 @@ def subscribe_keyboard() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
         inline_keyboard=[
             [InlineKeyboardButton(text="📢 Telegram kanal", url=CHANNEL_URL)],
-            [InlineKeyboardButton(text="🛒 Online do‘kon bot", url=SHOP_BOT_URL)],
+            [InlineKeyboardButton(text="🛒 online do‘kon bot", url=SHOP_BOT_URL)],
             [InlineKeyboardButton(text="✅ Tekshirish", callback_data="check_subscription")],
         ]
     )
@@ -54,7 +54,8 @@ def main_menu() -> ReplyKeyboardMarkup:
             [KeyboardButton(text="👥 Do‘stlarni taklif qilish")],
             [KeyboardButton(text="🏆 Reyting (TOP 10)"), KeyboardButton(text="🎲 Random o‘yin")],
             [KeyboardButton(text="💎 Mening ballarim"), KeyboardButton(text="📊 Statistikam")],
-            [KeyboardButton(text="ℹ️ Konkurs haqida")],
+            [KeyboardButton(text="🎁 Sovg‘alar"), KeyboardButton(text="ℹ️ konkurs haqida")],
+            [KeyboardButton(text="📞 admin bilan bog‘lanish")],
         ],
         resize_keyboard=True
     )

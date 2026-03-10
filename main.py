@@ -7,11 +7,7 @@ from aiogram.filters import CommandStart, Command
 from aiogram.client.default import DefaultBotProperties
 
 from database import db
-
-BOT_TOKEN = "BOT_TOKEN_YOZING"
-
-ADMIN_IDS = [1962467047]
-
+from config import BOT_TOKEN, ADMIN_IDS
 
 bot = Bot(
     BOT_TOKEN,

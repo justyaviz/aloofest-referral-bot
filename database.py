@@ -14,6 +14,23 @@ DEFAULT_PRIZES = [
     ("🎲 Random sovg‘a 3", "AirPods Max Copy", "Random g‘olibi uchun sovg‘a"),
 ]
 
+PROMO_CODES = {
+    "2101": "ANGREN",
+    "2102": "OHANGARON",
+    "2103": "OLMALIQ",
+    "2104": "QIBRAY",
+    "2105": "CHIRCHIQ",
+    "2106": "GAZALKENT",
+    "2107": "PISKENT",
+    "2108": "CHINOZ",
+    "2109": "OQQO‘RG‘ON",
+    "2110": "PARKENT",
+    "3101": "SHO‘RCHI",
+    "3102": "JARQO‘RG‘ON",
+    "3103": "SHEROBOD",
+    "4101": "GULISTON",
+}
+
 
 class Database:
     async def init(self):
@@ -29,6 +46,8 @@ class Database:
                 district TEXT,
                 fest_id TEXT UNIQUE,
                 referrer_id INTEGER,
+                promo_code TEXT,
+                promo_branch TEXT,
                 registered INTEGER DEFAULT 0,
                 banned INTEGER DEFAULT 0,
                 diamonds INTEGER DEFAULT 0,
@@ -151,13 +170,27 @@ class Database:
             cur = await db.execute("SELECT * FROM users WHERE user_id = ?", (user_id,))
             return await cur.fetchone()
 
+    async def get_user_by_fest(self, fest_id: str):
+        async with aiosqlite.connect(DB_PATH) as db:
+            db.row_factory = aiosqlite.Row
+            cur = await db.execute("SELECT * FROM users WHERE fest_id = ?", (fest_id,))
+            return await cur.fetchone()
+
     async def next_fest_id(self) -> str:
         async with aiosqlite.connect(DB_PATH) as db:
             cur = await db.execute("SELECT COUNT(*) FROM users WHERE registered = 1")
             count = (await cur.fetchone())[0] + 1
             return f"FEST-{count:03d}"
 
-    async def register_user(self, user_id: int, full_name: str, instagram: str, region: str, district: str):
+    async def register_user(
+        self,
+        user_id: int,
+        full_name: str,
+        instagram: str,
+        region: str,
+        district: str,
+        promo_code: str | None = None,
+    ):
         now = int(time.time())
         fest_id = await self.next_fest_id()
 
@@ -166,25 +199,38 @@ class Database:
             cur = await db.execute("SELECT * FROM users WHERE user_id = ?", (user_id,))
             user = await cur.fetchone()
             if not user:
-                return False, "Foydalanuvchi topilmadi"
+                return False, "Foydalanuvchi topilmadi", None
 
             first_registration = user["registered"] == 0
+
+            promo_branch = None
+            promo_bonus = 0
+            if promo_code:
+                promo_branch = PROMO_CODES.get(promo_code)
+                if not promo_branch:
+                    return False, "Promokod noto‘g‘ri", None
+                promo_bonus = 5
 
             await db.execute("""
                 UPDATE users
                 SET full_name = ?, instagram = ?, region = ?, district = ?,
                     fest_id = COALESCE(fest_id, ?),
+                    promo_code = COALESCE(promo_code, ?),
+                    promo_branch = COALESCE(promo_branch, ?),
                     registered = 1,
                     registered_at = COALESCE(registered_at, ?)
                 WHERE user_id = ?
-            """, (full_name, instagram, region, district, fest_id, now, user_id))
+            """, (
+                full_name, instagram, region, district,
+                fest_id, promo_code, promo_branch, now, user_id
+            ))
 
             if first_registration:
                 await db.execute("""
                     UPDATE users
                     SET diamonds = diamonds + ?
                     WHERE user_id = ?
-                """, (REGISTRATION_BONUS, user_id))
+                """, (REGISTRATION_BONUS + promo_bonus, user_id))
 
                 if user["referrer_id"]:
                     await db.execute("""
@@ -205,7 +251,7 @@ class Database:
                         """, (REFERRAL_BONUS, user["referrer_id"]))
 
             await db.commit()
-            return True, fest_id
+            return True, fest_id, promo_branch
 
     async def top_users(self, limit: int = 10):
         async with aiosqlite.connect(DB_PATH) as db:
@@ -328,6 +374,18 @@ class Database:
             """)
             return await cur.fetchall()
 
+    async def get_promo_stats(self):
+        async with aiosqlite.connect(DB_PATH) as db:
+            db.row_factory = aiosqlite.Row
+            cur = await db.execute("""
+                SELECT promo_branch, promo_code, COUNT(*) as total
+                FROM users
+                WHERE promo_code IS NOT NULL AND promo_branch IS NOT NULL
+                GROUP BY promo_branch, promo_code
+                ORDER BY total DESC, promo_branch ASC
+            """)
+            return await cur.fetchall()
+
     async def ban_user(self, user_id: int):
         async with aiosqlite.connect(DB_PATH) as db:
             await db.execute("UPDATE users SET banned = 1 WHERE user_id = ?", (user_id,))
@@ -347,9 +405,9 @@ class Database:
             else:
                 cur = await db.execute("""
                     SELECT * FROM users
-                    WHERE username LIKE ? OR full_name LIKE ? OR fest_id LIKE ? OR instagram LIKE ?
+                    WHERE username LIKE ? OR full_name LIKE ? OR fest_id LIKE ? OR instagram LIKE ? OR promo_code LIKE ? OR promo_branch LIKE ?
                     LIMIT ?
-                """, (like, like, like, like, limit))
+                """, (like, like, like, like, like, like, limit))
             return await cur.fetchall()
 
     async def all_users(self):

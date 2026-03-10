@@ -40,70 +40,156 @@ def build_html(user_id: int, sig: str) -> str:
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>aloofest ro‘yxatdan o‘tish</title>
 <style>
+* {{
+  box-sizing: border-box;
+}}
 body {{
   margin: 0;
-  padding: 20px;
+  min-height: 100vh;
   font-family: Arial, sans-serif;
-  background: #0f172a;
+  background:
+    radial-gradient(circle at top right, rgba(34,197,94,.25), transparent 25%),
+    radial-gradient(circle at bottom left, rgba(59,130,246,.25), transparent 25%),
+    linear-gradient(135deg, #0b1220 0%, #111827 100%);
   color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}}
+.wrapper {{
+  width: 100%;
+  max-width: 520px;
 }}
 .card {{
-  max-width: 460px;
-  margin: 0 auto;
-  background: #1e293b;
-  border-radius: 16px;
-  padding: 20px;
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.12);
+  backdrop-filter: blur(12px);
+  border-radius: 24px;
+  padding: 28px;
+  box-shadow: 0 20px 60px rgba(0,0,0,.35);
+}}
+.badge {{
+  display: inline-block;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: rgba(34,197,94,.15);
+  border: 1px solid rgba(34,197,94,.35);
+  color: #dcfce7;
+  font-size: 13px;
+  margin-bottom: 14px;
+}}
+h1 {{
+  margin: 0 0 8px;
+  font-size: 28px;
+}}
+p.subtitle {{
+  margin: 0 0 20px;
+  color: #cbd5e1;
+  line-height: 1.6;
 }}
 label {{
   display: block;
   margin-top: 14px;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
+  font-size: 14px;
+  color: #e2e8f0;
+  font-weight: 600;
 }}
 input, select {{
   width: 100%;
-  padding: 12px;
-  border-radius: 10px;
-  border: none;
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(255,255,255,.08);
+  color: white;
+  font-size: 15px;
+  outline: none;
+}}
+input::placeholder {{
+  color: #94a3b8;
+}}
+option {{
+  color: black;
 }}
 button {{
   width: 100%;
-  margin-top: 18px;
-  padding: 14px;
+  margin-top: 22px;
+  padding: 15px;
   border: none;
-  border-radius: 10px;
-  background: #22c55e;
+  border-radius: 14px;
+  background: linear-gradient(90deg, #22c55e, #16a34a);
   color: white;
-  font-weight: bold;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 10px 25px rgba(34,197,94,.28);
+}}
+button:hover {{
+  opacity: .96;
+}}
+#msg {{
+  margin-top: 16px;
+  padding: 14px;
+  border-radius: 14px;
+  display: none;
+  font-size: 14px;
+  line-height: 1.5;
+}}
+.success {{
+  display: block !important;
+  background: rgba(34,197,94,.15);
+  border: 1px solid rgba(34,197,94,.35);
+  color: #dcfce7;
+}}
+.error {{
+  display: block !important;
+  background: rgba(239,68,68,.15);
+  border: 1px solid rgba(239,68,68,.35);
+  color: #fee2e2;
+}}
+.footer-note {{
+  margin-top: 14px;
+  font-size: 12px;
+  color: #94a3b8;
+  text-align: center;
 }}
 </style>
 </head>
 <body>
-<div class="card">
-  <h2>aloofest ro‘yxatdan o‘tish</h2>
-  <p>Formani to‘ldiring va konkurs ishtirokchisiga aylaning.</p>
+<div class="wrapper">
+  <div class="card">
+    <div class="badge">🎉 aloofest registration</div>
+    <h1>Ro‘yxatdan o‘tish</h1>
+    <p class="subtitle">
+      Quyidagi ma’lumotlarni to‘ldiring va konkurs ishtirokchisiga aylaning.
+      Formani to‘ldirgach sizga <b>FEST ID</b> biriktiriladi va <b>+5 ball</b> beriladi.
+    </p>
 
-  <form id="regForm">
-    <label>Ismingiz</label>
-    <input id="name" required>
+    <form id="regForm">
+      <label>Ismingiz</label>
+      <input id="name" placeholder="Masalan: Ali Valiyev" required>
 
-    <label>Instagram username</label>
-    <input id="instagram" required>
+      <label>Instagram username</label>
+      <input id="instagram" placeholder="@username yoki username" required>
 
-    <label>Viloyatingizni tanlang</label>
-    <select id="region" required>
-      <option value="">Tanlang</option>
-      {options}
-    </select>
+      <label>Viloyatingizni tanlang</label>
+      <select id="region" required>
+        <option value="">Tanlang</option>
+        {options}
+      </select>
 
-    <label>Tuman / shaharni tanlang</label>
-    <select id="district" required>
-      <option value="">Avval viloyat tanlang</option>
-    </select>
+      <label>Tuman / shaharni tanlang</label>
+      <select id="district" required>
+        <option value="">Avval viloyat tanlang</option>
+      </select>
 
-    <button type="submit">RO‘YXATDAN O‘TISH</button>
-  </form>
+      <button type="submit">RO‘YXATDAN O‘TISH</button>
+    </form>
 
-  <div id="msg" style="margin-top:15px;"></div>
+    <div id="msg"></div>
+    <div class="footer-note">aloo • aloofest mega konkurs</div>
+  </div>
 </div>
 
 <script>
@@ -113,6 +199,7 @@ const sig = "{sig}";
 
 const regionEl = document.getElementById("region");
 const districtEl = document.getElementById("district");
+const msgBox = document.getElementById("msg");
 
 regionEl.addEventListener("change", () => {{
   districtEl.innerHTML = '<option value="">Tanlang</option>';
@@ -128,6 +215,9 @@ regionEl.addEventListener("change", () => {{
 document.getElementById("regForm").addEventListener("submit", async (e) => {{
   e.preventDefault();
 
+  msgBox.className = "";
+  msgBox.style.display = "none";
+
   const payload = {{
     uid: uid,
     sig: sig,
@@ -137,14 +227,28 @@ document.getElementById("regForm").addEventListener("submit", async (e) => {{
     district: districtEl.value
   }};
 
-  const res = await fetch("/api/register", {{
-    method: "POST",
-    headers: {{"Content-Type": "application/json"}},
-    body: JSON.stringify(payload)
-  }});
+  try {{
+    const res = await fetch("/api/register", {{
+      method: "POST",
+      headers: {{"Content-Type": "application/json"}},
+      body: JSON.stringify(payload)
+    }});
 
-  const data = await res.json();
-  document.getElementById("msg").innerText = data.message || data.error || "Xatolik";
+    const data = await res.json();
+
+    if (data.ok) {{
+      msgBox.classList.add("success");
+      msgBox.innerText = data.message || "Muvaffaqiyatli ro‘yxatdan o‘tildi";
+    }} else {{
+      msgBox.classList.add("error");
+      msgBox.innerText = data.error || "Xatolik yuz berdi";
+    }}
+    msgBox.style.display = "block";
+  }} catch (e) {{
+    msgBox.classList.add("error");
+    msgBox.innerText = "Server bilan bog‘lanishda xatolik yuz berdi";
+    msgBox.style.display = "block";
+  }}
 }});
 </script>
 </body>
@@ -207,7 +311,7 @@ async def register_api(request: web.Request):
 
     return web.json_response({
         "ok": True,
-        "message": f"Tabriklaymiz! Siz muvaffaqiyatli ro‘yxatdan o‘tdingiz. FEST ID: {result}"
+        "message": f"🎉 Tabriklaymiz! Siz muvaffaqiyatli ro‘yxatdan o‘tdingiz. FEST ID: {result}. Botga qaytib davom etishingiz mumkin."
     })
 
 

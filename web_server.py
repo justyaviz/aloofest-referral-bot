@@ -1,7 +1,8 @@
 import html
 import json
+import aiohttp
 from aiohttp import web
-from config import PORT
+from config import PORT, BOT_TOKEN, BOT_URL
 from database import db
 from keyboards import sign_uid
 
@@ -21,7 +22,6 @@ DISTRICTS = {
     "Sirdaryo": ["Guliston sh.", "Shirin", "Yangiyer", "Boyovut", "Guliston tumani", "Mirzaobod", "Oqoltin", "Sardoba", "Xovos"],
     "Qoraqalpog‘iston": ["Nukus sh.", "Amudaryo", "Beruniy", "Chimboy", "Mo‘ynoq", "Qo‘ng‘irot", "Shumanay", "To‘rtko‘l", "Xo‘jayli"],
 }
-
 REGIONS = list(DISTRICTS.keys())
 
 
@@ -32,6 +32,7 @@ def verify_uid(uid: int, sig: str) -> bool:
 def build_html(user_id: int, sig: str) -> str:
     options = "".join(f'<option value="{html.escape(r)}">{html.escape(r)}</option>' for r in REGIONS)
     districts_json = json.dumps(DISTRICTS, ensure_ascii=False)
+    back_url = BOT_URL or "#"
 
     return f"""<!DOCTYPE html>
 <html lang="uz">
@@ -40,9 +41,7 @@ def build_html(user_id: int, sig: str) -> str:
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>aloofest ro‘yxatdan o‘tish</title>
 <style>
-* {{
-  box-sizing: border-box;
-}}
+* {{ box-sizing: border-box; }}
 body {{
   margin: 0;
   min-height: 100vh;
@@ -59,7 +58,7 @@ body {{
 }}
 .wrapper {{
   width: 100%;
-  max-width: 520px;
+  max-width: 540px;
 }}
 .card {{
   background: rgba(255,255,255,0.07);
@@ -79,10 +78,7 @@ body {{
   font-size: 13px;
   margin-bottom: 14px;
 }}
-h1 {{
-  margin: 0 0 8px;
-  font-size: 28px;
-}}
+h1 {{ margin: 0 0 8px; font-size: 28px; }}
 p.subtitle {{
   margin: 0 0 20px;
   color: #cbd5e1;
@@ -106,27 +102,33 @@ input, select {{
   font-size: 15px;
   outline: none;
 }}
-input::placeholder {{
-  color: #94a3b8;
-}}
-option {{
-  color: black;
-}}
-button {{
-  width: 100%;
+input::placeholder {{ color: #94a3b8; }}
+option {{ color: black; }}
+.buttons {{
+  display: flex;
+  gap: 12px;
   margin-top: 22px;
+}}
+button, a.back-btn {{
+  flex: 1;
+  text-align: center;
   padding: 15px;
   border: none;
   border-radius: 14px;
-  background: linear-gradient(90deg, #22c55e, #16a34a);
-  color: white;
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 700;
   cursor: pointer;
+  text-decoration: none;
+}}
+button {{
+  background: linear-gradient(90deg, #22c55e, #16a34a);
+  color: white;
   box-shadow: 0 10px 25px rgba(34,197,94,.28);
 }}
-button:hover {{
-  opacity: .96;
+a.back-btn {{
+  background: rgba(255,255,255,.08);
+  color: white;
+  border: 1px solid rgba(255,255,255,.12);
 }}
 #msg {{
   margin-top: 16px;
@@ -184,7 +186,10 @@ button:hover {{
         <option value="">Avval viloyat tanlang</option>
       </select>
 
-      <button type="submit">RO‘YXATDAN O‘TISH</button>
+      <div class="buttons">
+        <a class="back-btn" href="{back_url}">⬅️ ORQAGA QAYTISH</a>
+        <button type="submit">RO‘YXATDAN O‘TISH</button>
+      </div>
     </form>
 
     <div id="msg"></div>
@@ -196,7 +201,6 @@ button:hover {{
 const districts = {districts_json};
 const uid = {user_id};
 const sig = "{sig}";
-
 const regionEl = document.getElementById("region");
 const districtEl = document.getElementById("district");
 const msgBox = document.getElementById("msg");
@@ -214,7 +218,6 @@ regionEl.addEventListener("change", () => {{
 
 document.getElementById("regForm").addEventListener("submit", async (e) => {{
   e.preventDefault();
-
   msgBox.className = "";
   msgBox.style.display = "none";
 
@@ -233,12 +236,16 @@ document.getElementById("regForm").addEventListener("submit", async (e) => {{
       headers: {{"Content-Type": "application/json"}},
       body: JSON.stringify(payload)
     }});
-
     const data = await res.json();
 
     if (data.ok) {{
       msgBox.classList.add("success");
       msgBox.innerText = data.message || "Muvaffaqiyatli ro‘yxatdan o‘tildi";
+      setTimeout(() => {{
+        if ("{back_url}") {{
+          window.location.href = "{back_url}";
+        }}
+      }}, 1800);
     }} else {{
       msgBox.classList.add("error");
       msgBox.innerText = data.error || "Xatolik yuz berdi";
@@ -253,6 +260,14 @@ document.getElementById("regForm").addEventListener("submit", async (e) => {{
 </script>
 </body>
 </html>"""
+
+
+async def send_bot_message(chat_id: int, text: str):
+    async with aiohttp.ClientSession() as session:
+        await session.post(
+            f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage",
+            json={"chat_id": chat_id, "text": text, "parse_mode": "HTML"}
+        )
 
 
 async def register_page(request: web.Request):
@@ -278,7 +293,7 @@ async def register_api(request: web.Request):
     uid = int(data.get("uid", 0))
     sig = data.get("sig", "")
     full_name = str(data.get("full_name", "")).strip()
-    instagram = str(data.get("instagram", "")).strip()
+    instagram = str(data.get("instagram", "")).strip().replace("@", "")
     region = str(data.get("region", "")).strip()
     district = str(data.get("district", "")).strip()
 
@@ -308,6 +323,15 @@ async def register_api(request: web.Request):
 
     if not ok:
         return web.json_response({"ok": False, "error": result})
+
+    await send_bot_message(
+        uid,
+        f"🎉 <b>Tabriklaymiz, {html.escape(full_name)}!</b>\n\n"
+        f"Siz konkurs ishtirokchisiga aylandingiz va <b>+5 ball</b> qo‘lga kiritdingiz.\n"
+        f"🆔 Sizning FEST ID raqamingiz: <b>{result}</b>\n\n"
+        f"Endi do‘stlaringizni taklif qiling va g‘olib bo‘lish imkoniyatingizni maksimal oshiring.\n\n"
+        f"Savollar tug‘ilsa, <b>YORDAM</b> menyusi orqali adminga savolingizni yuboring yoki <b>@aloouz_chat</b> ga bog‘laning."
+    )
 
     return web.json_response({
         "ok": True,

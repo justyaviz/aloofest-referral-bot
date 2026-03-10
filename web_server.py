@@ -56,10 +56,7 @@ body {{
   justify-content: center;
   padding: 24px;
 }}
-.wrapper {{
-  width: 100%;
-  max-width: 540px;
-}}
+.wrapper {{ width: 100%; max-width: 540px; }}
 .card {{
   background: rgba(255,255,255,0.07);
   border: 1px solid rgba(255,255,255,0.12);
@@ -79,11 +76,7 @@ body {{
   margin-bottom: 14px;
 }}
 h1 {{ margin: 0 0 8px; font-size: 28px; }}
-p.subtitle {{
-  margin: 0 0 20px;
-  color: #cbd5e1;
-  line-height: 1.6;
-}}
+p.subtitle {{ margin: 0 0 20px; color: #cbd5e1; line-height: 1.6; }}
 label {{
   display: block;
   margin-top: 14px;
@@ -117,10 +110,7 @@ button {{
   cursor: pointer;
   box-shadow: 0 10px 25px rgba(34,197,94,.28);
 }}
-.back-wrap {{
-  display: none;
-  margin-top: 14px;
-}}
+.back-wrap {{ display: none; margin-top: 14px; }}
 .back-btn {{
   display: block;
   width: 100%;
@@ -152,6 +142,14 @@ button {{
   border: 1px solid rgba(239,68,68,.35);
   color: #fee2e2;
 }}
+.check-wrap {{
+  margin-top: 18px;
+  padding: 14px;
+  border-radius: 14px;
+  background: rgba(255,255,255,.05);
+  border: 1px solid rgba(255,255,255,.08);
+}}
+.promo-box {{ display: none; }}
 .footer-note {{
   margin-top: 14px;
   font-size: 12px;
@@ -188,6 +186,18 @@ button {{
         <option value="">Avval viloyat tanlang</option>
       </select>
 
+      <div class="check-wrap">
+        <label style="margin:0; display:flex; gap:10px; align-items:center;">
+          <input type="checkbox" id="hasPromo" style="width:auto;">
+          <span>Promokod bormi?</span>
+        </label>
+      </div>
+
+      <div class="promo-box" id="promoBox">
+        <label>Promokod yozing va +5 ball oling</label>
+        <input id="promo" maxlength="4" placeholder="4 xonali kod">
+      </div>
+
       <button type="submit">RO‘YXATDAN O‘TISH</button>
     </form>
 
@@ -211,6 +221,8 @@ const msgBox = document.getElementById("msg");
 const backWrap = document.getElementById("backWrap");
 const backBtn = document.getElementById("backBtn");
 const botUrl = "{back_url}";
+const hasPromo = document.getElementById("hasPromo");
+const promoBox = document.getElementById("promoBox");
 
 regionEl.addEventListener("change", () => {{
   districtEl.innerHTML = '<option value="">Tanlang</option>';
@@ -221,6 +233,10 @@ regionEl.addEventListener("change", () => {{
     opt.textContent = item;
     districtEl.appendChild(opt);
   }});
+}});
+
+hasPromo.addEventListener("change", () => {{
+  promoBox.style.display = hasPromo.checked ? "block" : "none";
 }});
 
 backBtn.addEventListener("click", function(e) {{
@@ -247,7 +263,8 @@ document.getElementById("regForm").addEventListener("submit", async (e) => {{
     full_name: document.getElementById("name").value.trim(),
     instagram: document.getElementById("instagram").value.trim(),
     region: regionEl.value,
-    district: districtEl.value
+    district: districtEl.value,
+    promo_code: hasPromo.checked ? document.getElementById("promo").value.trim() : ""
   }};
 
   try {{
@@ -278,40 +295,6 @@ document.getElementById("regForm").addEventListener("submit", async (e) => {{
 </body>
 </html>"""
 
-
-async def send_bot_message(chat_id: int, text: str, reply_markup: dict | None = None):
-    payload = {
-        "chat_id": chat_id,
-        "text": text,
-        "parse_mode": "HTML",
-    }
-    if reply_markup:
-        payload["reply_markup"] = reply_markup
-
-    async with aiohttp.ClientSession() as session:
-        await session.post(
-            f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage",
-            json=payload
-        )
-
-
-async def register_page(request: web.Request):
-    try:
-        uid = int(request.query.get("uid", "0"))
-    except ValueError:
-        return web.Response(text="Noto‘g‘ri uid", status=400)
-
-    sig = request.query.get("sig", "")
-    if not verify_uid(uid, sig):
-        return web.Response(text="Ruxsat yo‘q", status=403)
-
-    user = await db.get_user(uid)
-    if not user:
-        return web.Response(text="Foydalanuvchi topilmadi. Avval botda /start bosing.", status=404)
-
-    return web.Response(text=build_html(uid, sig), content_type="text/html")
-
-
 async def register_api(request: web.Request):
     data = await request.json()
 
@@ -321,6 +304,7 @@ async def register_api(request: web.Request):
     instagram = str(data.get("instagram", "")).strip().replace("@", "")
     region = str(data.get("region", "")).strip()
     district = str(data.get("district", "")).strip()
+    promo_code = str(data.get("promo_code", "")).strip()
 
     if not verify_uid(uid, sig):
         return web.json_response({"ok": False, "error": "Ruxsat yo‘q"})
@@ -333,27 +317,35 @@ async def register_api(request: web.Request):
         return web.json_response({"ok": False, "error": "Viloyat noto‘g‘ri"})
     if district not in DISTRICTS[region]:
         return web.json_response({"ok": False, "error": "Tuman/shahar noto‘g‘ri"})
+    if promo_code and (not promo_code.isdigit() or len(promo_code) != 4):
+        return web.json_response({"ok": False, "error": "Promokod 4 xonali son bo‘lishi kerak"})
 
     user = await db.get_user(uid)
     if not user:
         return web.json_response({"ok": False, "error": "Foydalanuvchi topilmadi. Avval botda /start bosing."})
 
-    ok, result = await db.register_user(
+    ok, result, promo_branch = await db.register_user(
         user_id=uid,
         full_name=full_name,
         instagram=instagram,
         region=region,
-        district=district
+        district=district,
+        promo_code=promo_code or None
     )
 
     if not ok:
         return web.json_response({"ok": False, "error": result})
 
+    promo_text = ""
+    if promo_branch:
+        promo_text = f"\n🎁 Promokod sababli sizga qo‘shimcha <b>+5 ball</b> berildi.\n🏬 Filial: <b>{html.escape(promo_branch)}</b>"
+
     await send_bot_message(
         uid,
         f"🎉 <b>Tabriklaymiz, {html.escape(full_name)}!</b>\n\n"
         f"Siz konkurs ishtirokchisiga aylandingiz va <b>+5 ball</b> qo‘lga kiritdingiz.\n"
-        f"🆔 Sizning FEST ID raqamingiz: <b>{result}</b>\n\n"
+        f"🆔 Sizning FEST ID raqamingiz: <b>{result}</b>\n"
+        f"{promo_text}\n\n"
         f"Endi do‘stlaringizni taklif qiling va g‘olib bo‘lish imkoniyatingizni maksimal oshiring.\n\n"
         f"Savollar tug‘ilsa, <b>YORDAM</b> menyusi orqali adminga savolingizni yuboring yoki <b>@aloouz_chat</b> ga bog‘laning.",
         reply_markup={
@@ -363,14 +355,15 @@ async def register_api(request: web.Request):
         }
     )
 
+    msg = f"🎉 Tabriklaymiz! Siz muvaffaqiyatli ro‘yxatdan o‘tdingiz. FEST ID: {result}."
+    if promo_branch:
+        msg += f" Promokod qabul qilindi va +5 ball berildi."
+    msg += " Endi ORQAGA QAYTISH tugmasini bosib botga qayting."
+
     return web.json_response({
         "ok": True,
-        "message": f"🎉 Tabriklaymiz! Siz muvaffaqiyatli ro‘yxatdan o‘tdingiz. FEST ID: {result}. Endi ORQAGA QAYTISH tugmasini bosib botga qayting."
+        "message": msg
     })
-
-
-async def health(request: web.Request):
-    return web.Response(text="OK")
 
 
 async def setup_web_server():

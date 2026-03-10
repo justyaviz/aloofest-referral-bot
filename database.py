@@ -42,6 +42,7 @@ class Database:
                 tg_name TEXT,
                 full_name TEXT,
                 instagram TEXT,
+                phone TEXT,
                 region TEXT,
                 district TEXT,
                 fest_id TEXT UNIQUE,
@@ -49,6 +50,7 @@ class Database:
                 promo_code TEXT,
                 promo_branch TEXT,
                 registered INTEGER DEFAULT 0,
+                phone_verified INTEGER DEFAULT 0,
                 banned INTEGER DEFAULT 0,
                 diamonds INTEGER DEFAULT 0,
                 referral_count INTEGER DEFAULT 0,
@@ -56,6 +58,19 @@ class Database:
                 registered_at INTEGER
             )
             """)
+
+            # eski bazalarda column bo'lmasa qo'shib ketadi
+            for sql in [
+                "ALTER TABLE users ADD COLUMN phone TEXT",
+                "ALTER TABLE users ADD COLUMN phone_verified INTEGER DEFAULT 0",
+                "ALTER TABLE users ADD COLUMN promo_code TEXT",
+                "ALTER TABLE users ADD COLUMN promo_branch TEXT",
+                "ALTER TABLE users ADD COLUMN banned INTEGER DEFAULT 0",
+            ]:
+                try:
+                    await db.execute(sql)
+                except Exception:
+                    pass
 
             await db.execute("""
             CREATE TABLE IF NOT EXISTS referrals (
@@ -88,9 +103,8 @@ class Database:
 
             await db.execute("""
             CREATE TABLE IF NOT EXISTS pending_support_replies (
-                admin_id INTEGER,
-                target_user_id INTEGER,
-                PRIMARY KEY (admin_id)
+                admin_id INTEGER PRIMARY KEY,
+                target_user_id INTEGER
             )
             """)
 
@@ -252,6 +266,35 @@ class Database:
 
             await db.commit()
             return True, fest_id, promo_branch
+
+    async def save_phone(self, user_id: int, phone: str):
+        async with aiosqlite.connect(DB_PATH) as db:
+            await db.execute("""
+                UPDATE users
+                SET phone = ?, phone_verified = 1
+                WHERE user_id = ?
+            """, (phone, user_id))
+            await db.commit()
+
+    async def seed_test_random_users(self):
+        test_users = [
+            (8124320409, 25, 5),
+            (7803701344, 25, 5),
+        ]
+        async with aiosqlite.connect(DB_PATH) as db:
+            for user_id, diamonds, refs in test_users:
+                await db.execute("""
+                    UPDATE users
+                    SET diamonds = ?, referral_count = ?, registered = 1
+                    WHERE user_id = ?
+                """, (diamonds, refs, user_id))
+
+            await db.execute("""
+                UPDATE users
+                SET diamonds = 25, referral_count = 5, registered = 1
+                WHERE fest_id = 'FEST-002'
+            """)
+            await db.commit()
 
     async def top_users(self, limit: int = 10):
         async with aiosqlite.connect(DB_PATH) as db:

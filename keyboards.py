@@ -86,11 +86,11 @@ def admin_menu() -> ReplyKeyboardMarkup:
             [KeyboardButton(text="📋 Mijozlar ro‘yxati"), KeyboardButton(text="🎲 Random admin")],
             [KeyboardButton(text="🏆 TOP 10 admin"), KeyboardButton(text="📤 Excel export")],
             [KeyboardButton(text="📊 Statistika"), KeyboardButton(text="🌍 Hududiy statistika")],
-            [KeyboardButton(text="⛔ Ban user"), KeyboardButton(text="✅ Unban user")],
-            [KeyboardButton(text="🎁 Sovg‘alarni o‘zgartirish"), KeyboardButton(text="📣 Broadcast")],
-            [KeyboardButton(text="🔎 User qidirish"), KeyboardButton(text="💬 Userga xabar yuborish")],
-            [KeyboardButton(text="📢 Reklama joylash"), KeyboardButton(text="📢 Reklamalar ro‘yxati")],
-            [KeyboardButton(text="🏠 Oddiy menyu")],
+            [KeyboardButton(text="🎟 PROMO"), KeyboardButton(text="⛔ Ban user")],
+            [KeyboardButton(text="✅ Unban user"), KeyboardButton(text="🎁 Sovg‘alarni o‘zgartirish")],
+            [KeyboardButton(text="📣 Broadcast"), KeyboardButton(text="🔎 User qidirish")],
+            [KeyboardButton(text="💬 Userga xabar yuborish"), KeyboardButton(text="📢 Reklama joylash")],
+            [KeyboardButton(text="📢 Reklamalar ro‘yxati"), KeyboardButton(text="🏠 Oddiy menyu")],
         ],
         resize_keyboard=True
     )

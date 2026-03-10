@@ -34,3 +34,20 @@ if not BOT_TOKEN:
 
 if not BASE_URL:
     raise RuntimeError("BASE_URL topilmadi")
+
+class Settings:
+    bot_token = BOT_TOKEN
+    base_url = BASE_URL
+    webapp_secret = WEBAPP_SECRET
+    channel_username = CHANNEL_USERNAME
+    shop_bot_username = SHOP_BOT_USERNAME
+    channel_url = CHANNEL_URL
+    shop_bot_url = SHOP_BOT_URL
+    admin_ids = ADMIN_IDS
+    db_path = DB_PATH
+    port = PORT
+    registration_bonus = REGISTRATION_BONUS
+    referral_bonus = REFERRAL_BONUS
+
+
+settings = Settings()

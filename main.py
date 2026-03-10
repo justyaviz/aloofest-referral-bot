@@ -1,7 +1,6 @@
 import asyncio
 import io
 import random
-import time
 from datetime import datetime
 
 from aiogram import Bot, Dispatcher, F
@@ -207,6 +206,15 @@ async def start_cmd(message: Message):
         if ref.isdigit():
             await db.set_referrer_if_empty(message.from_user.id, int(ref))
 
+    user = await db.get_user(message.from_user.id)
+    if user and user["registered"]:
+        await message.answer(
+            f"🎉 Xush kelibsiz, {user['full_name'] or user['tg_name']}!\n\n"
+            f"Quyidagi menyulardan foydalaning 👇",
+            reply_markup=main_menu()
+        )
+        return
+
     await message.answer(START_TEXT, reply_markup=start_keyboard())
 
 
@@ -216,6 +224,22 @@ async def admin_cmd(message: Message):
         await message.answer("⛔ Siz admin emassiz.")
         return
     await message.answer("🛠 <b>Admin panel</b>", reply_markup=admin_menu())
+
+
+@dp.callback_query(F.data == "open_main_menu")
+async def open_main_menu(call: CallbackQuery):
+    user = await db.get_user(call.from_user.id)
+    if not user or not user["registered"]:
+        await call.message.answer("Avval ro‘yxatdan o‘ting.")
+        await call.answer()
+        return
+
+    await call.message.answer(
+        f"🚀 Zo‘r, {user['full_name'] or user['tg_name']}!\n\n"
+        f"Quyidagi menyulardan foydalaning 👇",
+        reply_markup=main_menu()
+    )
+    await call.answer("Menyu ochildi")
 
 
 @dp.callback_query(F.data == "join_now")
@@ -371,15 +395,12 @@ async def about_menu(message: Message):
     await message.answer(ABOUT_TEXT)
 
 
-# =========================
-# ADMIN PANEL
-# =========================
-
 @dp.message(F.text == "🏠 Oddiy menyu")
 async def back_user_menu(message: Message):
     await message.answer("🏠 Oddiy menyuga qaytdingiz.", reply_markup=main_menu())
 
 
+# Admin panel handlers
 @dp.message(F.text == "📋 Mijozlar ro‘yxati")
 async def admin_users_list(message: Message):
     if not is_admin(message.from_user.id):
@@ -731,7 +752,7 @@ async def random_end_date(message: Message, state: FSMContext):
 
     loading = await message.answer("🎲 Random ishga tushdi...\n\n🌀 G‘olib aniqlanmoqda...\nLoading: 0%")
     for p in [10, 25, 40, 55, 70, 85, 100]:
-        await asyncio.sleep(1.3)
+        await asyncio.sleep(1.2)
         await loading.edit_text(
             f"🎲 Random ishga tushdi...\n\n"
             f"✨ Ishtirokchilar tekshirilmoqda...\n"
@@ -797,13 +818,8 @@ async def confirm_last_random(call: CallbackQuery):
     await call.answer("G‘olib tasdiqlandi", show_alert=True)
 
 
-# =========================
-# USER/ADMIN FREE TEXT
-# =========================
-
 @dp.message()
-async def fallback(message: Message, state: FSMContext):
-    # admin reply mode
+async def fallback(message: Message):
     if is_admin(message.from_user.id):
         pending = await db.get_pending_reply(message.from_user.id)
         if pending:
@@ -816,8 +832,6 @@ async def fallback(message: Message, state: FSMContext):
             return
 
     user = await db.get_user(message.from_user.id)
-
-    # oddiy user yozgan har qanday matn yordamga tushadi
     if user and user["registered"] and not is_admin(message.from_user.id):
         await db.save_support_message(
             user_id=message.from_user.id,
@@ -826,7 +840,6 @@ async def fallback(message: Message, state: FSMContext):
             message_text=message.text
         )
 
-        # barcha adminlarga yuboramiz
         text = (
             f"🆘 <b>Yangi yordam xabari</b>\n\n"
             f"👤 {user['full_name'] or user['tg_name']}\n"

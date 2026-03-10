@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import time
 import aiosqlite
 from config import DB_PATH, REGISTRATION_BONUS, REFERRAL_BONUS
@@ -7,9 +9,9 @@ DEFAULT_PRIZES = [
     ("🥇 1-o‘rin", "Tecno Spark Go 30C", "TOP reytingdagi 1-o‘rin uchun sovg‘a"),
     ("🥈 2-o‘rin", "Mini pech Artel", "TOP reytingdagi 2-o‘rin uchun sovg‘a"),
     ("🥉 3-o‘rin", "Ryugzak", "TOP reytingdagi 3-o‘rin uchun sovg‘a"),
-    ("🎲 Random sovg‘a 1", "AirPods Max Copy", "Random g‘oliblari uchun maxsus sovg‘a"),
-    ("🎲 Random sovg‘a 2", "AirPods Max Copy", "Random g‘oliblari uchun maxsus sovg‘a"),
-    ("🎲 Random sovg‘a 3", "AirPods Max Copy", "Random g‘oliblari uchun maxsus sovg‘a"),
+    ("🎲 Random sovg‘a 1", "AirPods Max Copy", "Random g‘olibi uchun sovg‘a"),
+    ("🎲 Random sovg‘a 2", "AirPods Max Copy", "Random g‘olibi uchun sovg‘a"),
+    ("🎲 Random sovg‘a 3", "AirPods Max Copy", "Random g‘olibi uchun sovg‘a"),
 ]
 
 
@@ -25,9 +27,10 @@ class Database:
                 instagram TEXT,
                 region TEXT,
                 district TEXT,
-                fest_id TEXT,
+                fest_id TEXT UNIQUE,
                 referrer_id INTEGER,
                 registered INTEGER DEFAULT 0,
+                banned INTEGER DEFAULT 0,
                 diamonds INTEGER DEFAULT 0,
                 referral_count INTEGER DEFAULT 0,
                 created_at INTEGER,
@@ -64,6 +67,30 @@ class Database:
             )
             """)
 
+            await db.execute("""
+            CREATE TABLE IF NOT EXISTS pending_support_replies (
+                admin_id INTEGER,
+                target_user_id INTEGER,
+                PRIMARY KEY (admin_id)
+            )
+            """)
+
+            await db.execute("""
+            CREATE TABLE IF NOT EXISTS random_history (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                winner_user_id INTEGER,
+                winner_name TEXT,
+                telegram_id INTEGER,
+                instagram TEXT,
+                fest_id TEXT,
+                diamonds INTEGER,
+                start_date TEXT,
+                end_date TEXT,
+                created_at INTEGER,
+                confirmed INTEGER DEFAULT 0
+            )
+            """)
+
             await db.commit()
 
             cur = await db.execute("SELECT COUNT(*) FROM prizes")
@@ -83,9 +110,8 @@ class Database:
             row = await cur.fetchone()
             if not row:
                 await db.execute("""
-                    INSERT INTO users (
-                        user_id, username, tg_name, created_at
-                    ) VALUES (?, ?, ?, ?)
+                    INSERT INTO users (user_id, username, tg_name, created_at)
+                    VALUES (?, ?, ?, ?)
                 """, (user_id, username, tg_name, now))
             else:
                 await db.execute("""
@@ -114,6 +140,12 @@ class Database:
         async with aiosqlite.connect(DB_PATH) as db:
             db.row_factory = aiosqlite.Row
             cur = await db.execute("SELECT * FROM users WHERE user_id = ?", (user_id,))
+            return await cur.fetchone()
+
+    async def get_user_by_fest(self, fest_id: str):
+        async with aiosqlite.connect(DB_PATH) as db:
+            db.row_factory = aiosqlite.Row
+            cur = await db.execute("SELECT * FROM users WHERE fest_id = ?", (fest_id,))
             return await cur.fetchone()
 
     async def next_fest_id(self) -> str:
@@ -177,7 +209,7 @@ class Database:
             db.row_factory = aiosqlite.Row
             cur = await db.execute("""
                 SELECT * FROM users
-                WHERE registered = 1
+                WHERE registered = 1 AND banned = 0
                 ORDER BY diamonds DESC, referral_count DESC, registered_at ASC
                 LIMIT ?
             """, (limit,))
@@ -193,12 +225,12 @@ class Database:
             diamonds = row["diamonds"]
 
             cur = await db.execute(
-                "SELECT COUNT(*) + 1 FROM users WHERE diamonds > ?",
+                "SELECT COUNT(*) + 1 FROM users WHERE diamonds > ? AND registered = 1 AND banned = 0",
                 (diamonds,)
             )
             rank = (await cur.fetchone())[0]
 
-            cur = await db.execute("SELECT COUNT(*) FROM users WHERE registered = 1")
+            cur = await db.execute("SELECT COUNT(*) FROM users WHERE registered = 1 AND banned = 0")
             total = (await cur.fetchone())[0]
 
             return {"rank": rank, "total": total, "diamonds": diamonds}
@@ -209,6 +241,15 @@ class Database:
             cur = await db.execute("SELECT * FROM prizes ORDER BY id ASC")
             return await cur.fetchall()
 
+    async def update_prize(self, prize_id: int, place_name: str, title: str, description: str):
+        async with aiosqlite.connect(DB_PATH) as db:
+            await db.execute("""
+                UPDATE prizes
+                SET place_name = ?, title = ?, description = ?
+                WHERE id = ?
+            """, (place_name, title, description, prize_id))
+            await db.commit()
+
     async def save_support_message(self, user_id: int, username: str | None, full_name: str | None, message_text: str):
         async with aiosqlite.connect(DB_PATH) as db:
             await db.execute("""
@@ -216,6 +257,157 @@ class Database:
                 VALUES (?, ?, ?, ?, ?)
             """, (user_id, username, full_name, message_text, int(time.time())))
             await db.commit()
+
+    async def set_pending_reply(self, admin_id: int, target_user_id: int):
+        async with aiosqlite.connect(DB_PATH) as db:
+            await db.execute("""
+                INSERT INTO pending_support_replies (admin_id, target_user_id)
+                VALUES (?, ?)
+                ON CONFLICT(admin_id) DO UPDATE SET target_user_id=excluded.target_user_id
+            """, (admin_id, target_user_id))
+            await db.commit()
+
+    async def get_pending_reply(self, admin_id: int):
+        async with aiosqlite.connect(DB_PATH) as db:
+            cur = await db.execute("""
+                SELECT target_user_id FROM pending_support_replies WHERE admin_id = ?
+            """, (admin_id,))
+            row = await cur.fetchone()
+            return row[0] if row else None
+
+    async def clear_pending_reply(self, admin_id: int):
+        async with aiosqlite.connect(DB_PATH) as db:
+            await db.execute("DELETE FROM pending_support_replies WHERE admin_id = ?", (admin_id,))
+            await db.commit()
+
+    async def get_recent_users(self, limit: int = 50):
+        async with aiosqlite.connect(DB_PATH) as db:
+            db.row_factory = aiosqlite.Row
+            cur = await db.execute("""
+                SELECT * FROM users ORDER BY created_at DESC LIMIT ?
+            """, (limit,))
+            return await cur.fetchall()
+
+    async def get_stats(self):
+        async with aiosqlite.connect(DB_PATH) as db:
+            cur = await db.execute("SELECT COUNT(*) FROM users")
+            total_users = (await cur.fetchone())[0]
+
+            cur = await db.execute("SELECT COUNT(*) FROM users WHERE registered = 1")
+            registered = (await cur.fetchone())[0]
+
+            cur = await db.execute("SELECT COUNT(*) FROM users WHERE banned = 1")
+            banned = (await cur.fetchone())[0]
+
+            cur = await db.execute("SELECT COALESCE(SUM(diamonds),0) FROM users")
+            total_diamonds = (await cur.fetchone())[0]
+
+            cur = await db.execute("SELECT COUNT(*) FROM users WHERE referral_count >= 3 AND banned = 0 AND registered = 1")
+            random_ready = (await cur.fetchone())[0]
+
+            return {
+                "total_users": total_users,
+                "registered": registered,
+                "banned": banned,
+                "diamonds": total_diamonds,
+                "random_ready": random_ready,
+            }
+
+    async def get_region_stats(self):
+        async with aiosqlite.connect(DB_PATH) as db:
+            db.row_factory = aiosqlite.Row
+            cur = await db.execute("""
+                SELECT region, COUNT(*) as total, COALESCE(SUM(diamonds),0) as diamonds
+                FROM users
+                WHERE registered = 1
+                GROUP BY region
+                ORDER BY total DESC
+            """)
+            return await cur.fetchall()
+
+    async def ban_user(self, user_id: int):
+        async with aiosqlite.connect(DB_PATH) as db:
+            await db.execute("UPDATE users SET banned = 1 WHERE user_id = ?", (user_id,))
+            await db.commit()
+
+    async def unban_user(self, user_id: int):
+        async with aiosqlite.connect(DB_PATH) as db:
+            await db.execute("UPDATE users SET banned = 0 WHERE user_id = ?", (user_id,))
+            await db.commit()
+
+    async def search_users(self, query: str, limit: int = 10):
+        like = f"%{query}%"
+        async with aiosqlite.connect(DB_PATH) as db:
+            db.row_factory = aiosqlite.Row
+            if query.isdigit():
+                cur = await db.execute("SELECT * FROM users WHERE user_id = ? LIMIT ?", (int(query), limit))
+            else:
+                cur = await db.execute("""
+                    SELECT * FROM users
+                    WHERE username LIKE ? OR full_name LIKE ? OR fest_id LIKE ? OR instagram LIKE ?
+                    LIMIT ?
+                """, (like, like, like, like, limit))
+            return await cur.fetchall()
+
+    async def all_users(self):
+        async with aiosqlite.connect(DB_PATH) as db:
+            db.row_factory = aiosqlite.Row
+            cur = await db.execute("SELECT * FROM users ORDER BY created_at ASC")
+            return await cur.fetchall()
+
+    async def save_random_history(
+        self,
+        winner_user_id: int,
+        winner_name: str,
+        telegram_id: int,
+        instagram: str,
+        fest_id: str,
+        diamonds: int,
+        start_date: str,
+        end_date: str,
+    ):
+        async with aiosqlite.connect(DB_PATH) as db:
+            await db.execute("""
+                INSERT INTO random_history (
+                    winner_user_id, winner_name, telegram_id, instagram,
+                    fest_id, diamonds, start_date, end_date, created_at, confirmed
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0)
+            """, (
+                winner_user_id, winner_name, telegram_id, instagram,
+                fest_id, diamonds, start_date, end_date, int(time.time())
+            ))
+            await db.commit()
+
+    async def get_last_random(self):
+        async with aiosqlite.connect(DB_PATH) as db:
+            db.row_factory = aiosqlite.Row
+            cur = await db.execute("""
+                SELECT * FROM random_history ORDER BY id DESC LIMIT 1
+            """)
+            return await cur.fetchone()
+
+    async def confirm_last_random(self):
+        async with aiosqlite.connect(DB_PATH) as db:
+            await db.execute("""
+                UPDATE random_history
+                SET confirmed = 1
+                WHERE id = (SELECT id FROM random_history ORDER BY id DESC LIMIT 1)
+            """)
+            await db.commit()
+
+    async def get_random_candidates(self, start_ts: int, end_ts: int):
+        async with aiosqlite.connect(DB_PATH) as db:
+            db.row_factory = aiosqlite.Row
+            cur = await db.execute("""
+                SELECT * FROM users
+                WHERE registered = 1
+                  AND banned = 0
+                  AND registered_at BETWEEN ? AND ?
+                  AND referral_count >= 3
+                  AND diamonds >= 15
+            """, (start_ts, end_ts))
+            return await cur.fetchall()
 
 
 db = Database()

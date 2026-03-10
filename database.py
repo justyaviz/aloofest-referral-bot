@@ -3,6 +3,16 @@ import aiosqlite
 from config import DB_PATH, REGISTRATION_BONUS, REFERRAL_BONUS
 
 
+DEFAULT_PRIZES = [
+    ("🥇 1-o‘rin", "Tecno Spark Go 30C", "TOP reytingdagi 1-o‘rin uchun sovg‘a"),
+    ("🥈 2-o‘rin", "Mini pech Artel", "TOP reytingdagi 2-o‘rin uchun sovg‘a"),
+    ("🥉 3-o‘rin", "Ryugzak", "TOP reytingdagi 3-o‘rin uchun sovg‘a"),
+    ("🎲 Random sovg‘a 1", "AirPods Max Copy", "Random g‘oliblari uchun maxsus sovg‘a"),
+    ("🎲 Random sovg‘a 2", "AirPods Max Copy", "Random g‘oliblari uchun maxsus sovg‘a"),
+    ("🎲 Random sovg‘a 3", "AirPods Max Copy", "Random g‘oliblari uchun maxsus sovg‘a"),
+]
+
+
 class Database:
     async def init(self):
         async with aiosqlite.connect(DB_PATH) as db:
@@ -33,7 +43,38 @@ class Database:
             )
             """)
 
+            await db.execute("""
+            CREATE TABLE IF NOT EXISTS prizes (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                place_name TEXT,
+                title TEXT,
+                description TEXT,
+                created_at INTEGER
+            )
+            """)
+
+            await db.execute("""
+            CREATE TABLE IF NOT EXISTS support_messages (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER,
+                username TEXT,
+                full_name TEXT,
+                message_text TEXT,
+                created_at INTEGER
+            )
+            """)
+
             await db.commit()
+
+            cur = await db.execute("SELECT COUNT(*) FROM prizes")
+            count = (await cur.fetchone())[0]
+            if count == 0:
+                now = int(time.time())
+                await db.executemany(
+                    "INSERT INTO prizes (place_name, title, description, created_at) VALUES (?, ?, ?, ?)",
+                    [(a, b, c, now) for a, b, c in DEFAULT_PRIZES]
+                )
+                await db.commit()
 
     async def add_user(self, user_id: int, username: str | None, tg_name: str | None):
         now = int(time.time())
@@ -161,6 +202,20 @@ class Database:
             total = (await cur.fetchone())[0]
 
             return {"rank": rank, "total": total, "diamonds": diamonds}
+
+    async def get_prizes(self):
+        async with aiosqlite.connect(DB_PATH) as db:
+            db.row_factory = aiosqlite.Row
+            cur = await db.execute("SELECT * FROM prizes ORDER BY id ASC")
+            return await cur.fetchall()
+
+    async def save_support_message(self, user_id: int, username: str | None, full_name: str | None, message_text: str):
+        async with aiosqlite.connect(DB_PATH) as db:
+            await db.execute("""
+                INSERT INTO support_messages (user_id, username, full_name, message_text, created_at)
+                VALUES (?, ?, ?, ?, ?)
+            """, (user_id, username, full_name, message_text, int(time.time())))
+            await db.commit()
 
 
 db = Database()

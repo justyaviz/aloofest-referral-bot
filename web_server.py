@@ -104,28 +104,30 @@ input, select {{
 }}
 input::placeholder {{ color: #94a3b8; }}
 option {{ color: black; }}
-.buttons {{
-  display: flex;
-  gap: 12px;
+button {{
+  width: 100%;
   margin-top: 22px;
-}}
-button, a.back-btn {{
-  flex: 1;
-  text-align: center;
   padding: 15px;
   border: none;
   border-radius: 14px;
-  font-size: 15px;
-  font-weight: 700;
-  cursor: pointer;
-  text-decoration: none;
-}}
-button {{
   background: linear-gradient(90deg, #22c55e, #16a34a);
   color: white;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
   box-shadow: 0 10px 25px rgba(34,197,94,.28);
 }}
-a.back-btn {{
+.back-wrap {{
+  display: none;
+  margin-top: 14px;
+}}
+.back-btn {{
+  display: block;
+  width: 100%;
+  text-align: center;
+  padding: 14px;
+  border-radius: 14px;
+  text-decoration: none;
   background: rgba(255,255,255,.08);
   color: white;
   border: 1px solid rgba(255,255,255,.12);
@@ -186,13 +188,15 @@ a.back-btn {{
         <option value="">Avval viloyat tanlang</option>
       </select>
 
-      <div class="buttons">
-        <a class="back-btn" href="{back_url}">⬅️ ORQAGA QAYTISH</a>
-        <button type="submit">RO‘YXATDAN O‘TISH</button>
-      </div>
+      <button type="submit">RO‘YXATDAN O‘TISH</button>
     </form>
 
     <div id="msg"></div>
+
+    <div class="back-wrap" id="backWrap">
+      <a class="back-btn" id="backBtn" href="{back_url}">⬅️ ORQAGA QAYTISH</a>
+    </div>
+
     <div class="footer-note">aloo • aloofest mega konkurs</div>
   </div>
 </div>
@@ -204,6 +208,9 @@ const sig = "{sig}";
 const regionEl = document.getElementById("region");
 const districtEl = document.getElementById("district");
 const msgBox = document.getElementById("msg");
+const backWrap = document.getElementById("backWrap");
+const backBtn = document.getElementById("backBtn");
+const botUrl = "{back_url}";
 
 regionEl.addEventListener("change", () => {{
   districtEl.innerHTML = '<option value="">Tanlang</option>';
@@ -216,10 +223,23 @@ regionEl.addEventListener("change", () => {{
   }});
 }});
 
+backBtn.addEventListener("click", function(e) {{
+  if (window.Telegram && window.Telegram.WebApp) {{
+    e.preventDefault();
+    window.Telegram.WebApp.close();
+    setTimeout(() => {{
+      if (botUrl && botUrl !== "#") {{
+        window.location.href = botUrl;
+      }}
+    }}, 200);
+  }}
+}});
+
 document.getElementById("regForm").addEventListener("submit", async (e) => {{
   e.preventDefault();
   msgBox.className = "";
   msgBox.style.display = "none";
+  backWrap.style.display = "none";
 
   const payload = {{
     uid: uid,
@@ -241,11 +261,8 @@ document.getElementById("regForm").addEventListener("submit", async (e) => {{
     if (data.ok) {{
       msgBox.classList.add("success");
       msgBox.innerText = data.message || "Muvaffaqiyatli ro‘yxatdan o‘tildi";
-      setTimeout(() => {{
-        if ("{back_url}") {{
-          window.location.href = "{back_url}";
-        }}
-      }}, 1800);
+      backWrap.style.display = "block";
+      document.getElementById("regForm").style.display = "none";
     }} else {{
       msgBox.classList.add("error");
       msgBox.innerText = data.error || "Xatolik yuz berdi";
@@ -262,11 +279,19 @@ document.getElementById("regForm").addEventListener("submit", async (e) => {{
 </html>"""
 
 
-async def send_bot_message(chat_id: int, text: str):
+async def send_bot_message(chat_id: int, text: str, reply_markup: dict | None = None):
+    payload = {
+        "chat_id": chat_id,
+        "text": text,
+        "parse_mode": "HTML",
+    }
+    if reply_markup:
+        payload["reply_markup"] = reply_markup
+
     async with aiohttp.ClientSession() as session:
         await session.post(
             f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage",
-            json={"chat_id": chat_id, "text": text, "parse_mode": "HTML"}
+            json=payload
         )
 
 
@@ -330,12 +355,17 @@ async def register_api(request: web.Request):
         f"Siz konkurs ishtirokchisiga aylandingiz va <b>+5 ball</b> qo‘lga kiritdingiz.\n"
         f"🆔 Sizning FEST ID raqamingiz: <b>{result}</b>\n\n"
         f"Endi do‘stlaringizni taklif qiling va g‘olib bo‘lish imkoniyatingizni maksimal oshiring.\n\n"
-        f"Savollar tug‘ilsa, <b>YORDAM</b> menyusi orqali adminga savolingizni yuboring yoki <b>@aloouz_chat</b> ga bog‘laning."
+        f"Savollar tug‘ilsa, <b>YORDAM</b> menyusi orqali adminga savolingizni yuboring yoki <b>@aloouz_chat</b> ga bog‘laning.",
+        reply_markup={
+            "inline_keyboard": [
+                [{"text": "🚀 BOSHLASH", "callback_data": "open_main_menu"}]
+            ]
+        }
     )
 
     return web.json_response({
         "ok": True,
-        "message": f"🎉 Tabriklaymiz! Siz muvaffaqiyatli ro‘yxatdan o‘tdingiz. FEST ID: {result}. Botga qaytib davom etishingiz mumkin."
+        "message": f"🎉 Tabriklaymiz! Siz muvaffaqiyatli ro‘yxatdan o‘tdingiz. FEST ID: {result}. Endi ORQAGA QAYTISH tugmasini bosib botga qayting."
     })
 
 

@@ -99,13 +99,10 @@ Keling, endi sovg'alar ro'yxati bilan tanishtiraman 👇
 🥈 2-o‘rin — Mini pech Artel
 🥉 3-o‘rin — Ryugzak
 
-🎲 <b>Random o'yini:</b>
-Kamida 3 ta do‘stingizni taklif qiling va random o‘yinda ishtirok eting.
+🎲 <b>Random o'yini (TEST rejim):</b>
+Ro‘yxatdan o‘tgan va kanalga obuna bo‘lgan ishtirokchilar random o‘yinda qatnashadi.
 
-💎 Kanalimizga 3 ta odam qo‘shgan barcha ishtirokchilar orasidan random orqali 3 ta maxsus sovg‘a taqdim qilinadi:
-1. AirPods Max Copy
-2. AirPods Max Copy
-3. AirPods Max Copy
+💎 Hozir test rejimda random uchun do‘st taklif qilish majburiy emas.
 
 📅 G‘oliblar jonli efir orqali aniqlanadi.
 Sana bot orqali va @aloo_uzb kanalida e’lon qilinadi.
@@ -114,32 +111,27 @@ Hammaga omad! 🍀
 """
 
 RULES_TEXT = f"""
-🏆 <b>aloofest konkurs tizimi (final model)</b>
+🏆 <b>aloofest konkurs tizimi (TEST model)</b>
 
 🎯 <b>Ball tizimi</b>
 1 ta do‘st taklif qilish = 5 ball
 
-Ball random o‘yinda ham, TOP reytingda ham ishlatiladi.
+Ball TOP reytingda ishlatiladi.
 
-Misol:
-1 referal = 5 ball
-5 referal = 25 ball
-10 referal = 50 ball
-
-🎲 <b>1. Har hafta random o‘yini</b>
+🎲 <b>Random o‘yini (TEST rejim)</b>
 
 Ishtirok sharti:
-Kamida 3 ta do‘st taklif qilish kerak.
-3 referal = 15 ball
+✅ Telegram kanalga obuna bo‘lish
+✅ Web orqali ro‘yxatdan o‘tish
 
-3 va undan ko‘p referal to‘plagan ishtirokchilar random o‘yinda qatnashadi.
+❗ Hozir test uchun randomda qatnashish uchun 3 ta referal shart emas.
 
-🥇 <b>2. Ramazon hayiti super konkursi (TOP)</b>
+🥇 <b>TOP konkurs</b>
 
 TOP reyting:
 Eng ko‘p ball yig‘ganlar yutadi.
 
-📋 <b>Ishtirok shartlari</b>
+📋 <b>Asosiy shartlar</b>
 1️⃣ Telegram — @{CHANNEL_USERNAME} kanaliga obuna bo‘lish
 2️⃣ Instagram — asosiy profilga va u obuna bo‘lgan 15 ta profilga obuna bo‘lish
 3️⃣ Web sahifa orqali ro‘yxatdan o‘tish
@@ -161,6 +153,8 @@ aloofest — bu aloo tomonidan tashkil etilgan maxsus yutuqli konkurs bo‘lib, 
 • random o‘yinda ishtirok etish
 
 orqali qimmatbaho sovg‘alarni yutib olishingiz mumkin.
+
+🎲 Hozir test rejimda random uchun referal sharti vaqtincha o‘chirilgan.
 
 📸 Instagram sharti:
 {INSTAGRAM_RULE_TEXT}
@@ -288,6 +282,141 @@ async def seed_test(message: Message):
     )
 
 
+@dp.message(Command("addball"))
+async def add_ball(message: Message):
+    if not is_admin(message.from_user.id):
+        return
+
+    parts = (message.text or "").split()
+
+    if len(parts) != 3:
+        await message.answer(
+            "❌ Format noto‘g‘ri.\n\n"
+            "To‘g‘ri format:\n"
+            "/addball USER_ID BALL\n\n"
+            "Misol:\n"
+            "/addball 8124320409 50"
+        )
+        return
+
+    user_id_raw = parts[1].strip()
+    points_raw = parts[2].strip()
+
+    if not user_id_raw.isdigit() or not points_raw.lstrip("-").isdigit():
+        await message.answer("❌ USER_ID va BALL raqam bo‘lishi kerak.")
+        return
+
+    user_id = int(user_id_raw)
+    points = int(points_raw)
+
+    user = await db.get_user(user_id)
+    if not user:
+        await message.answer("❌ User topilmadi.")
+        return
+
+    await db.add_points(user_id, points)
+    updated_user = await db.get_user(user_id)
+
+    await message.answer(
+        f"✅ Ball qo‘shildi.\n\n"
+        f"🆔 User: {user_id}\n"
+        f"👤 Ism: {updated_user['full_name'] or updated_user['tg_name'] or updated_user['username'] or '-'}\n"
+        f"💎 Qo‘shildi: {points}\n"
+        f"💎 Jami: {updated_user['diamonds']}"
+    )
+
+
+@dp.message(Command("addref"))
+async def add_ref(message: Message):
+    if not is_admin(message.from_user.id):
+        return
+
+    parts = (message.text or "").split()
+
+    if len(parts) != 3:
+        await message.answer(
+            "❌ Format noto‘g‘ri.\n\n"
+            "To‘g‘ri format:\n"
+            "/addref USER_ID REF_SONI\n\n"
+            "Misol:\n"
+            "/addref 8124320409 3"
+        )
+        return
+
+    user_id_raw = parts[1].strip()
+    refs_raw = parts[2].strip()
+
+    if not user_id_raw.isdigit() or not refs_raw.isdigit():
+        await message.answer("❌ USER_ID va REF_SONI raqam bo‘lishi kerak.")
+        return
+
+    user_id = int(user_id_raw)
+    refs = int(refs_raw)
+
+    user = await db.get_user(user_id)
+    if not user:
+        await message.answer("❌ User topilmadi.")
+        return
+
+    await db.add_referrals(user_id, refs)
+    updated_user = await db.get_user(user_id)
+
+    await message.answer(
+        f"✅ Referral qo‘shildi.\n\n"
+        f"🆔 User: {user_id}\n"
+        f"👤 Ism: {updated_user['full_name'] or updated_user['tg_name'] or updated_user['username'] or '-'}\n"
+        f"👥 Qo‘shildi: {refs}\n"
+        f"👥 Jami: {updated_user['referral_count']}"
+    )
+
+
+@dp.message(Command("setready"))
+async def set_ready(message: Message):
+    if not is_admin(message.from_user.id):
+        return
+
+    parts = (message.text or "").split()
+
+    if len(parts) != 4:
+        await message.answer(
+            "❌ Format noto‘g‘ri.\n\n"
+            "To‘g‘ri format:\n"
+            "/setready USER_ID BALL REF\n\n"
+            "Misol:\n"
+            "/setready 8124320409 25 5"
+        )
+        return
+
+    user_id_raw = parts[1].strip()
+    diamonds_raw = parts[2].strip()
+    refs_raw = parts[3].strip()
+
+    if not user_id_raw.isdigit() or not diamonds_raw.isdigit() or not refs_raw.isdigit():
+        await message.answer("❌ USER_ID, BALL va REF raqam bo‘lishi kerak.")
+        return
+
+    user_id = int(user_id_raw)
+    diamonds = int(diamonds_raw)
+    refs = int(refs_raw)
+
+    user = await db.get_user(user_id)
+    if not user:
+        await message.answer("❌ User topilmadi.")
+        return
+
+    await db.set_ready_user(user_id, diamonds, refs)
+    updated_user = await db.get_user(user_id)
+
+    await message.answer(
+        f"✅ User test uchun tayyorlandi.\n\n"
+        f"🆔 User: {user_id}\n"
+        f"👤 Ism: {updated_user['full_name'] or updated_user['tg_name'] or updated_user['username'] or '-'}\n"
+        f"💎 Ball: {updated_user['diamonds']}\n"
+        f"👥 Referral: {updated_user['referral_count']}\n"
+        f"✅ Registered: {updated_user['registered']}"
+    )
+
+
 @dp.callback_query(F.data == "open_main_menu")
 async def open_main_menu(call: CallbackQuery):
     user = await db.get_user(call.from_user.id)
@@ -407,15 +536,14 @@ async def random_menu(message: Message):
         await message.answer("Avval ro‘yxatdan o‘ting.")
         return
 
-    refs = user["referral_count"] or 0
     balls = user["diamonds"] or 0
-    status = "✅ Siz random o‘yinda ishtirok etish huquqiga egasiz." if refs >= 3 else "❌ Siz hali random o‘yinga to‘liq qatnashish shartini bajarmadingiz."
+    status = "✅ Siz random o‘yinda qatnasha olasiz."
 
     await message.answer(
-        f"🎲 <b>Random o‘yin</b>\n\n"
-        f"👥 Referallar: {refs}\n"
+        f"🎲 <b>Random o‘yin (TEST rejim)</b>\n\n"
         f"💎 Ball: {balls}\n\n"
-        f"{status}"
+        f"{status}\n"
+        f"📌 Hozir test rejimda random uchun referal sharti vaqtincha o‘chirilgan."
     )
 
 
@@ -484,10 +612,6 @@ async def about_menu(message: Message):
 async def back_user_menu(message: Message):
     await message.answer("🏠 Oddiy menyuga qaytdingiz.", reply_markup=main_menu())
 
-
-# =========================
-# ADMIN PANEL
-# =========================
 
 @dp.message(F.text == "📋 Mijozlar ro‘yxati")
 async def admin_users_list(message: Message):
@@ -941,7 +1065,7 @@ async def random_confirm(call: CallbackQuery, state: FSMContext):
 
     users = await db.get_random_candidates(start_ts, end_ts)
     if not users:
-        await call.message.edit_text("❌ Bu oralig‘da 3+ referal (15+ ball) ishtirokchilar topilmadi.")
+        await call.message.edit_text("❌ Bu oralig‘da random uchun ishtirokchilar topilmadi.")
         await state.clear()
         await call.answer()
         return

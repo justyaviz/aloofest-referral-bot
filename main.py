@@ -5,9 +5,15 @@ from aiogram.enums import ParseMode
 from aiogram.filters import CommandStart
 from aiogram.types import Message, CallbackQuery
 
-from config import BOT_TOKEN, CHANNEL_USERNAME
+from config import BOT_TOKEN, CHANNEL_USERNAME, ADMIN_IDS
 from database import db
-from keyboards import start_keyboard, rules_keyboard, subscribe_keyboard, register_keyboard, main_menu
+from keyboards import (
+    start_keyboard,
+    rules_keyboard,
+    subscribe_keyboard,
+    register_keyboard,
+    main_menu,
+)
 from web_server import setup_web_server
 
 
@@ -64,28 +70,12 @@ Ishtirok sharti:
 Kamida 3 ta do‘st taklif qilish kerak.
 3 referal = 15 ball
 
-Shunda foydalanuvchi random o‘yin ishtirokchisi bo‘ladi.
-
-Random qanday ishlaydi:
-• 3+ referal yig‘ganlar ro‘yxati olinadi
-• ular orasidan random g‘olib tanlanadi
-• har hafta 1 ta g‘olib
+Shunda foydalanuvchi random o‘yin ishtirokchisiga aylanadi.
 
 🥇 <b>2. Ramazon hayiti super konkursi (TOP)</b>
 
-Bu asosiy katta konkurs.
-
 TOP reyting:
 Eng ko‘p ball yig‘ganlar yutadi.
-
-Ko‘rinadi:
-🏆 TOP 10 ishtirokchilar
-1. Ali — FEST-014 — 240 ball
-2. Bek — FEST-092 — 195 ball
-3. Aziz — FEST-033 — 170 ball
-4. ...
-
-📋 <b>TOP konkurs shartlari</b>
 
 1️⃣ Telegram
 Ishtirokchi @aloo_uzb kanaliga obuna bo‘lishi kerak.
@@ -94,7 +84,7 @@ Bot avtomatik tekshiradi.
 2️⃣ Instagram
 Ishtirokchi @aloo.uz_ sahifasiga obuna bo‘lishi kerak.
 Sahifa obuna bo‘lgan 15 ta profilga ham obuna bo‘lishi kerak.
-Bu manual tekshiruv orqali amalga oshiriladi.
+Bu qism manual tekshiruv asosida amalga oshiriladi.
 """
 
 ABOUT_TEXT = """
@@ -156,8 +146,8 @@ async def show_rules(call: CallbackQuery):
         RULES_TEXT + "\n\n"
         "Davom etish uchun quyidagilarni bajaring:\n"
         "• Telegram kanalga obuna bo‘ling\n"
-        "• Online do‘kon botga /start bosing\n"
-        "• So‘ng Tekshirish tugmasini bosing",
+        "• online do‘kon botga /start bosing\n"
+        "• so‘ng Tekshirish tugmasini bosing",
         reply_markup=subscribe_keyboard()
     )
     await call.answer()
@@ -206,7 +196,8 @@ async def top_menu(message: Message):
 
     text = "🏆 <b>TOP 10 ishtirokchilar</b>\n\n"
     for i, row in enumerate(rows, start=1):
-        text += f"{i}. {row['full_name'] or row['tg_name'] or row['username'] or 'Ishtirokchi'} — {row['fest_id'] or '-'} — {row['diamonds']} ball\n"
+        title = row["full_name"] or row["tg_name"] or row["username"] or "Ishtirokchi"
+        text += f"{i}. {title} — {row['fest_id'] or '-'} — {row['diamonds']} ball\n"
     await message.answer(text)
 
 
@@ -219,11 +210,7 @@ async def random_menu(message: Message):
 
     refs = user["referral_count"] or 0
     balls = user["diamonds"] or 0
-
-    if refs >= 3:
-        status = "✅ Siz random o‘yinda ishtirok etish huquqiga egasiz."
-    else:
-        status = "❌ Siz hali random o‘yinga to‘liq qatnashish shartini bajarmadingiz."
+    status = "✅ Siz random o‘yinda ishtirok etish huquqiga egasiz." if refs >= 3 else "❌ Siz hali random o‘yinga to‘liq qatnashish shartini bajarmadingiz."
 
     await message.answer(
         f"🎲 <b>Random o‘yin</b>\n\n"
@@ -266,7 +253,43 @@ async def my_stats(message: Message):
     )
 
 
-@dp.message(F.text == "ℹ️ Konkurs haqida")
+@dp.message(F.text == "🎁 Sovg‘alar")
+async def prizes_menu(message: Message):
+    prizes = await db.get_prizes()
+    if not prizes:
+        await message.answer("Sovg‘alar hali kiritilmagan.")
+        return
+
+    text = "🎁 <b>aloofest sovg‘alari</b>\n\n"
+    for item in prizes:
+        text += f"{item['place_name']} — <b>{item['title']}</b>\n{item['description']}\n\n"
+    await message.answer(text)
+
+
+@dp.message(F.text == "📞 admin bilan bog‘lanish")
+async def contact_admin(message: Message):
+    user = await db.get_user(message.from_user.id)
+    full_name = None
+    if user:
+        full_name = user["full_name"] or user["tg_name"]
+
+    text = (
+        "📞 <b>admin bilan bog‘lanish</b>\n\n"
+        "Savolingiz yoki murojaatingizni shu chatga yozib yuboring.\n"
+        "Adminlar imkon qadar tez javob berishadi."
+    )
+    await message.answer(text)
+
+    if full_name:
+        await db.save_support_message(
+            user_id=message.from_user.id,
+            username=message.from_user.username,
+            full_name=full_name,
+            message_text="Bog‘lanish menyusi ochildi"
+        )
+
+
+@dp.message(F.text == "ℹ️ konkurs haqida")
 async def about_menu(message: Message):
     await message.answer(ABOUT_TEXT)
 
@@ -274,7 +297,17 @@ async def about_menu(message: Message):
 @dp.message()
 async def fallback(message: Message):
     user = await db.get_user(message.from_user.id)
+
+    # agar ro'yxatdan o'tgan user bo'lsa menyuni qayta ko'rsatamiz
     if user and user["registered"]:
+        if message.text and not message.text.startswith("/"):
+            if message.from_user.id not in ADMIN_IDS:
+                await db.save_support_message(
+                    user_id=message.from_user.id,
+                    username=message.from_user.username,
+                    full_name=user["full_name"] or user["tg_name"],
+                    message_text=message.text
+                )
         await message.answer("Quyidagi menyulardan foydalaning 👇", reply_markup=main_menu())
 
 

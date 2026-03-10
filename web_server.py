@@ -365,6 +365,12 @@ async def register_api(request: web.Request):
         "message": msg
     })
 
+from aiohttp import web
+
+# boshqa kodlar...
+
+async def health(request):
+    return web.Response(text="OK")
 
 async def setup_web_server():
     app = web.Application()

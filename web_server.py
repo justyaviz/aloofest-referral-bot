@@ -439,7 +439,7 @@ async def register_api(request: web.Request):
             f"\n🏬 Filial: <b>{html.escape(promo_branch)}</b>"
         )
 
-    await send_bot_message(
+        await send_bot_message(
         uid,
         f"🎉 <b>Tabriklaymiz, {html.escape(full_name)}!</b>\n\n"
         f"Siz konkurs ishtirokchisiga aylandingiz va <b>+5 ball</b> qo‘lga kiritdingiz.\n"
@@ -447,11 +447,11 @@ async def register_api(request: web.Request):
         f"{promo_text}\n\n"
         f"Endi do‘stlaringizni taklif qiling va g‘olib bo‘lish imkoniyatingizni maksimal oshiring.\n\n"
         f"Savollar tug‘ilsa, <b>YORDAM</b> menyusi orqali adminga savolingizni yuboring yoki <b>@aloouz_chat</b> ga bog‘laning.",
-        reply_markup={{
+        reply_markup={
             "inline_keyboard": [
-                [{{"text": "🚀 BOSHLASH", "callback_data": "open_main_menu"}}]
+                [{"text": "🚀 BOSHLASH", "callback_data": "open_main_menu"}]
             ]
-        }}
+        }
     )
 
     msg = f"🎉 Tabriklaymiz! Siz muvaffaqiyatli ro‘yxatdan o‘tdingiz. FEST ID: {result}."
@@ -459,8 +459,7 @@ async def register_api(request: web.Request):
         msg += " Promokod qabul qilindi va +5 ball berildi."
     msg += " Endi ORQAGA QAYTISH tugmasini bosib botga qayting."
 
-    return web.json_response({{"ok": True, "message": msg}})
-
+    return web.json_response({"ok": True, "message": msg})
 
 async def setup_web_server():
     app = web.Application()

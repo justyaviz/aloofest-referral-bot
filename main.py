@@ -545,6 +545,12 @@ async def check_subscription(call: CallbackQuery):
     )
     await call.answer("Tasdiqlandi")
 
+@dp.message(F.video)
+async def get_video_file_id(message: Message):
+    await message.answer(message.video.file_id)
+
+
+REFERRAL_VIDEO_FILE_ID = "BU_YERGA_VIDEO_FILE_ID"
 
 @dp.message(F.text == "👥 Do‘stlarni taklif qilish")
 async def referrals_menu(message: Message):
@@ -554,7 +560,8 @@ async def referrals_menu(message: Message):
         return
 
     link = await get_ref_link(message.from_user.id)
-    await message.answer(
+
+    caption = (
         "🔥 <b>Hayit oldidan super imkoniyat!</b>\n\n"
         "“aloo” siz uchun <b>“aloofest” MEGA KONKURSI</b>ni taqdim etadi!\n\n"
         "Do‘stlaringizni taklif qiling, ball to‘plang va quyidagi qimmatbaho sovg‘alarni yutib oling:\n\n"
@@ -565,8 +572,13 @@ async def referrals_menu(message: Message):
         "🎲 <b>Haftalik random sovg‘alari:</b>\n"
         "AirPods, telefon, smartwatch, planshet va boshqa ko‘plab sovg‘alar!\n\n"
         "💎 Har bir taklif qilgan do‘stingiz uchun sizga <b>+5 ball</b> beriladi.\n\n"
-        "📌 Sizning maxsus havolangiz orqali ro‘yxatdan o‘tgan har bir ishtirokchi sizni g‘alabaga yanada yaqinlashtiradi.\n\n"
-        f"🚀 Hoziroq ulashing va hayit oldidan omadni qo‘ldan boy bermang:\n\n{link}"
+        "🚀 Hoziroq ulashing:\n\n"
+        f"{link}"
+    )
+
+    await message.answer_video(
+        video=REFERRAL_VIDEO_FILE_ID,
+        caption=caption
     )
 
 

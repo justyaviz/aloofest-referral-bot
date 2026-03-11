@@ -484,9 +484,9 @@ class Database:
             else:
                 cur = await db.execute("""
                     SELECT * FROM users
-                    WHERE username LIKE ? OR full_name LIKE ? OR fest_id LIKE ? OR instagram LIKE ? OR promo_code LIKE ? OR promo_branch LIKE ?
+                    WHERE username LIKE ? OR full_name LIKE ? OR fest_id LIKE ? OR promo_code LIKE ? OR promo_branch LIKE ?
                     LIMIT ?
-                """, (like, like, like, like, like, like, limit))
+                """, (like, like, like, like, like, limit))
             return await cur.fetchall()
 
     async def all_users(self):

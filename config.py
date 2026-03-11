@@ -38,11 +38,12 @@ REGISTRATION_BONUS = int(os.getenv("REGISTRATION_BONUS", "5"))
 REFERRAL_BONUS = int(os.getenv("REFERRAL_BONUS", "5"))
 
 REFERRAL_VIDEO_FILE_ID = os.getenv("REFERRAL_VIDEO_FILE_ID", "").strip()
-GUIDE_VIDEO_FILE_ID = os.getenv("GUIDE_VIDEO_FILE_ID", "").strip()
 
 if not BOT_TOKEN:
     raise RuntimeError("BOT_TOKEN topilmadi")
+
 if not BASE_URL:
     raise RuntimeError("BASE_URL topilmadi")
+
 if not BOT_USERNAME:
     raise RuntimeError("BOT_USERNAME topilmadi")

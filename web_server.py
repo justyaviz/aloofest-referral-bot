@@ -172,9 +172,6 @@ button {{
       <label>Ismingiz</label>
       <input id="name" placeholder="Masalan: Ali Valiyev" required>
 
-      <label>Instagram username</label>
-      <input id="instagram" placeholder="@username yoki username" required>
-
       <label>Viloyatingizni tanlang</label>
       <select id="region" required>
         <option value="">Tanlang</option>
@@ -261,7 +258,6 @@ document.getElementById("regForm").addEventListener("submit", async (e) => {{
     uid: uid,
     sig: sig,
     full_name: document.getElementById("name").value.trim(),
-    instagram: document.getElementById("instagram").value.trim(),
     region: regionEl.value,
     district: districtEl.value,
     promo_code: hasPromo.checked ? document.getElementById("promo").value.trim() : ""
@@ -320,7 +316,6 @@ async def register_api(request: web.Request):
     uid = int(data.get("uid", 0))
     sig = data.get("sig", "")
     full_name = str(data.get("full_name", "")).strip()
-    instagram = str(data.get("instagram", "")).strip().replace("@", "")
     region = str(data.get("region", "")).strip()
     district = str(data.get("district", "")).strip()
     promo_code = str(data.get("promo_code", "")).strip()
@@ -330,8 +325,6 @@ async def register_api(request: web.Request):
 
     if not full_name:
         return web.json_response({"ok": False, "error": "Ism kiritilishi shart"})
-    if not instagram:
-        return web.json_response({"ok": False, "error": "Instagram username kiritilishi shart"})
     if region not in DISTRICTS:
         return web.json_response({"ok": False, "error": "Viloyat noto‘g‘ri"})
     if district not in DISTRICTS[region]:
@@ -346,7 +339,7 @@ async def register_api(request: web.Request):
     ok, result, promo_branch = await db.register_user(
         user_id=uid,
         full_name=full_name,
-        instagram=instagram,
+        instagram="",
         region=region,
         district=district,
         promo_code=promo_code or None

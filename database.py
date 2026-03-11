@@ -6,12 +6,12 @@ from config import DB_PATH, REGISTRATION_BONUS, REFERRAL_BONUS
 
 
 DEFAULT_PRIZES = [
-    ("🥇 1-o‘rin", "Tecno Spark Go 30C", "TOP reytingdagi 1-o‘rin uchun sovg‘a"),
-    ("🥈 2-o‘rin", "Mini pech Artel", "TOP reytingdagi 2-o‘rin uchun sovg‘a"),
-    ("🥉 3-o‘rin", "Ryugzak", "TOP reytingdagi 3-o‘rin uchun sovg‘a"),
-    ("🎲 Random sovg‘a 1", "AirPods Max Copy", "Random g‘olibi uchun sovg‘a"),
-    ("🎲 Random sovg‘a 2", "AirPods Max Copy", "Random g‘olibi uchun sovg‘a"),
-    ("🎲 Random sovg‘a 3", "AirPods Max Copy", "Random g‘olibi uchun sovg‘a"),
+    ("🥇 1-o‘rin", "Redmi Robot Mop 2", "Hayit mega konkursi 1-o‘rin sovg‘asi"),
+    ("🥈 2-o‘rin", "Novey Senat SC1 Red telefoni", "Hayit mega konkursi 2-o‘rin sovg‘asi"),
+    ("🥉 3-o‘rin", "Zamonaviy elektr choynak", "Hayit mega konkursi 3-o‘rin sovg‘asi"),
+    ("🎲 Haftalik random 1", "AirPods", "Haftalik random sovg‘asi"),
+    ("🎲 Haftalik random 2", "Telefon", "Haftalik random sovg‘asi"),
+    ("🎲 Haftalik random 3", "Smartwatch / Planshet / boshqa sovg‘alar", "Haftalik random sovg‘asi"),
 ]
 
 PROMO_CODES = {
@@ -420,7 +420,7 @@ class Database:
             cur = await db.execute("SELECT COALESCE(SUM(diamonds),0) FROM users")
             total_diamonds = (await cur.fetchone())[0]
 
-            cur = await db.execute("SELECT COUNT(*) FROM users WHERE banned = 0 AND registered = 1")
+            cur = await db.execute("SELECT COUNT(*) FROM users WHERE referral_count >= 3 AND diamonds >= 15 AND banned = 0 AND registered = 1")
             random_ready = (await cur.fetchone())[0]
 
             return {
@@ -534,6 +534,8 @@ class Database:
                 WHERE registered = 1
                   AND banned = 0
                   AND registered_at BETWEEN ? AND ?
+                  AND referral_count >= 3
+                  AND diamonds >= 15
             """, (start_ts, end_ts))
             return await cur.fetchall()
 

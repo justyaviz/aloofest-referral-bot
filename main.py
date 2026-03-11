@@ -24,8 +24,6 @@ from config import (
     BOT_TOKEN,
     CHANNEL_USERNAME,
     ADMIN_IDS,
-    INSTAGRAM_RULE_TEXT,
-    INSTAGRAM_MAIN_URL,
     REFERRAL_VIDEO_FILE_ID,
 )
 from database import db
@@ -34,7 +32,6 @@ from keyboards import (
     rules_keyboard,
     subscribe_keyboard,
     register_keyboard,
-    after_registration_keyboard,
     main_menu,
     admin_menu,
     phone_keyboard,
@@ -91,19 +88,19 @@ Sizda <b>2 xil usulda g‘olib bo‘lish</b> imkoniyati bor:
 
 🎁 <b>Hayit bayrami mega konkurs sovg‘alari:</b>
 
-🥇 1-o‘rin — <b>Redmi Robot Mop 2</b>  
-🥈 2-o‘rin — <b>Novey Senat SC1 Red</b> telefoni  
+🥇 1-o‘rin — <b>Redmi Robot Mop 2</b>
+🥈 2-o‘rin — <b>Novey Senat SC1 Red</b> telefoni
 🥉 3-o‘rin — <b>Zamonaviy elektr choynak</b>
 
-🎲 <b>Haftalik random o‘yinlari:</b>  
+🎲 <b>Haftalik random o‘yinlari:</b>
 Har hafta davomida kamida <b>3+ do‘stingizni taklif qilib</b>, <b>15+ ball</b> to‘plash orqali random o‘yinida ishtirok eta olasiz.
 
 Haftalik o‘yinlarda quyidagi qimmatbaho sovg‘alar o‘ynaladi:
 
-• AirPods  
-• Telefon  
-• Smartwatch  
-• Planshet  
+• AirPods
+• Telefon
+• Smartwatch
+• Planshet
 • va boshqa qimmatbaho sovg‘alar
 
 📅 G‘oliblar bot orqali hamda <b>@aloo_uzb</b> kanalida e’lon qilinadi.
@@ -111,74 +108,69 @@ Haftalik o‘yinlarda quyidagi qimmatbaho sovg‘alar o‘ynaladi:
 🍀 Omad sizga yor bo‘lsin!
 """
 
-RULES_TEXT = f"""
+RULES_TEXT = """
 🏆 <b>“aloofest” MEGA KONKURSI qoidalari</b>
 
 Ushbu konkursda g‘olib bo‘lishning <b>2 xil turi</b> mavjud:
 
-1️⃣ <b>TOP 3 mega konkurs</b>  
+1️⃣ <b>TOP 3 mega konkurs</b>
 2️⃣ <b>Haftalik random o‘yinlari</b>
 
-🎯 <b>Ball tizimi:</b>  
+🎯 <b>Ball tizimi:</b>
 Har bir taklif qilingan do‘st uchun sizga <b>+5 ball</b> beriladi.
 
-Misollar:  
-1 do‘st = 5 ball  
-3 do‘st = 15 ball  
-5 do‘st = 25 ball  
+Misollar:
+1 do‘st = 5 ball
+3 do‘st = 15 ball
+5 do‘st = 25 ball
 10 do‘st = 50 ball
 
-🥇 <b>TOP 3 mega konkurs</b>  
+🥇 <b>TOP 3 mega konkurs</b>
 Eng ko‘p ball to‘plagan ishtirokchilar hayit bayrami mega konkursining asosiy g‘oliblari bo‘ladi.
 
-🎁 Sovg‘alar:  
-1-o‘rin — Redmi Robot Mop 2  
-2-o‘rin — Novey Senat SC1 Red telefoni  
+🎁 Sovg‘alar:
+1-o‘rin — Redmi Robot Mop 2
+2-o‘rin — Novey Senat SC1 Red telefoni
 3-o‘rin — Zamonaviy elektr choynak
 
-🎲 <b>Haftalik random o‘yinlari</b>  
+🎲 <b>Haftalik random o‘yinlari</b>
 Har hafta davomida <b>kamida 3+ do‘st taklif qilib</b>, <b>15+ ball</b> to‘plagan ishtirokchilar random o‘yinida qatnasha oladi.
 
-Haftalik random sovg‘alariga quyidagilar kiradi:  
-• AirPods  
-• Telefon  
-• Smartwatch  
-• Planshet  
+Haftalik random sovg‘alariga quyidagilar kiradi:
+• AirPods
+• Telefon
+• Smartwatch
+• Planshet
 • va boshqa qimmatbaho sovg‘alar
 
-📋 <b>Ishtirok etish uchun:</b>  
-• Telegram kanalga obuna bo‘ling  
-• Ro‘yxatdan o‘ting  
-• Do‘stlaringizni taklif qiling  
+📋 <b>Ishtirok etish uchun:</b>
+• Telegram kanalga obuna bo‘ling
+• Ro‘yxatdan o‘ting
+• Do‘stlaringizni taklif qiling
 • Ball to‘plang va g‘olib bo‘ling
-
-❗ Instagram bo‘yicha shartlar ham majburiy hisoblanadi. Agar ishtirokchi Instagram shartlarini bajarmagan bo‘lsa, g‘oliblik tasdiqlanmaydi.
-
-📸 Instagram bo‘yicha shart:
-{INSTAGRAM_RULE_TEXT}
 """
 
-ABOUT_TEXT = f"""
+ABOUT_TEXT = """
 ℹ️ <b>“aloofest” MEGA KONKURSI haqida</b>
 
 “aloofest” — bu kirib kelayotgan <b>Ramazon Hayiti</b> munosabati bilan “aloo” tomonidan tashkil etilgan maxsus hayitlik mega konkursdir.
 
 Bu konkursda siz 2 xil usulda g‘olib bo‘lishingiz mumkin:
 
-1️⃣ <b>TOP 3 mega konkurs</b>  
+1️⃣ <b>TOP 3 mega konkurs</b>
 Eng ko‘p ball to‘plagan ishtirokchilar asosiy hayit sovg‘alarini yutadi.
 
-2️⃣ <b>Haftalik random o‘yinlari</b>  
+2️⃣ <b>Haftalik random o‘yinlari</b>
 Har hafta 3+ do‘st taklif qilib, 15+ ball yig‘ganlar random o‘yinida qatnashadi.
 
-🎁 Sovg‘alar orasida:  
-• Redmi Robot Mop 2  
-• Novey Senat SC1 Red telefoni  
-• Zamonaviy elektr choynak  
-• AirPods  
-• Telefon  
-• Smartwatch  
-• Planshet  
+🎁 Sovg‘alar orasida:
+• Redmi Robot Mop 2
+• Novey Senat SC1 Red telefoni
+• Zamonaviy elektr choynak
+• AirPods
+• Telefon
+• Smartwatch
+• Planshet
 • va boshqa qimmatbaho sovg‘alar mavjud
 
 📢 Barcha yangiliklar bot orqali va @aloo_uzb kanalida e’lon qilinadi.
@@ -189,17 +181,17 @@ GUIDE_TEXT = """
 
 Siz “aloofest” mega konkursida muvaffaqiyatli ro‘yxatdan o‘tdingiz va boshlang‘ich <b>ball</b> qo‘lga kiritdingiz. ✅
 
-📌 Endi keyingi bosqich juda muhim:  
+📌 Endi keyingi bosqich juda muhim:
 quyidagi <b>qisqa yo‘riqnoma</b> orqali konkursda qanday qatnashish, ball yig‘ish va g‘olib bo‘lish tartibini ko‘rib chiqing.
 
-🎯 Sizda 2 xil imkoniyat bor:  
-• TOP 3 mega konkursda g‘olib bo‘lish  
+🎯 Sizda 2 xil imkoniyat bor:
+• TOP 3 mega konkursda g‘olib bo‘lish
 • Haftalik random o‘yinlarida sovg‘a yutish
 
-📹 <b>Qisqa yo‘riqnoma:</b>  
-• konkursda qanday ishtirok etish  
-• do‘st taklif qilib ball yig‘ish  
-• TOP 3 ga chiqish  
+📹 <b>Qisqa yo‘riqnoma:</b>
+• konkursda qanday ishtirok etish
+• do‘st taklif qilib ball yig‘ish
+• TOP 3 ga chiqish
 • haftalik random o‘yinida qatnashish
 
 👥 Endi do‘stlaringizni taklif qiling, ko‘proq ball yig‘ing va hayit oldidan “aloo”dan qimmatbaho sovg‘alarni yutib oling!
@@ -481,7 +473,6 @@ async def show_rules(call: CallbackQuery):
         RULES_TEXT + "\n\n"
         "Davom etish uchun quyidagilarni bajaring:\n"
         "• Telegram kanalga obuna bo‘ling\n"
-        "• Instagram profilga o‘ting\n"
         "• online do‘kon botga /start bosing\n"
         "• so‘ng Tekshirish tugmasini bosing",
         reply_markup=subscribe_keyboard()
@@ -502,9 +493,7 @@ async def check_subscription(call: CallbackQuery):
 
     await call.message.answer(
         "✅ Zo‘r, Telegram obunangiz tasdiqlandi!\n\n"
-        "Endi konkurs ishtirokchisi bo‘lish uchun ro‘yxatdan o‘ting 👇\n\n"
-        "❗ Eslatma: Instagramdagi obuna ham majburiy hisoblanadi. "
-        "Agar Instagram shartlari bajarilmagan bo‘lsa, g‘oliblik tasdiqlanmaydi.",
+        "Endi konkurs ishtirokchisi bo‘lish uchun ro‘yxatdan o‘ting 👇",
         reply_markup=register_keyboard(call.from_user.id)
     )
     await call.answer("Tasdiqlandi")
@@ -766,7 +755,7 @@ async def search_user_start(message: Message, state: FSMContext):
     if not is_admin(message.from_user.id):
         return
     await state.set_state(SearchState.waiting_query)
-    await message.answer("Qidirish uchun user ID, FEST ID, username yoki instagram yuboring.")
+    await message.answer("Qidirish uchun user ID, FEST ID yoki ism yuboring.")
 
 
 @dp.message(SearchState.waiting_query)
@@ -783,7 +772,6 @@ async def search_user_finish(message: Message, state: FSMContext):
         text += (
             f"🆔 {user['user_id']}\n"
             f"👤 {user['full_name'] or user['tg_name'] or '-'}\n"
-            f"📸 @{user['instagram'] or '-'}\n"
             f"📱 {user['phone'] or '-'}\n"
             f"🎫 {user['fest_id'] or '-'}\n"
             f"💎 {user['diamonds']} | 👥 {user['referral_count']}\n\n"
@@ -950,7 +938,7 @@ async def excel_export(message: Message):
     ws = wb.active
     ws.title = "Users"
     ws.append([
-        "Telegram ID", "Ism", "Instagram", "Telefon", "FEST ID",
+        "Telegram ID", "Ism", "Telefon", "FEST ID",
         "Viloyat", "Tuman", "Ball", "Referallar", "Promokod", "Filial", "Ban"
     ])
 
@@ -958,7 +946,6 @@ async def excel_export(message: Message):
         ws.append([
             user["user_id"],
             user["full_name"] or user["tg_name"] or "",
-            user["instagram"] or "",
             user["phone"] or "",
             user["fest_id"] or "",
             user["region"] or "",
@@ -1115,17 +1102,15 @@ async def random_confirm(call: CallbackQuery):
         winner_user_id=winner["user_id"],
         winner_name=winner_name,
         telegram_id=winner["user_id"],
-        instagram=winner["instagram"] or "",
+        instagram="",
         fest_id=winner["fest_id"] or "",
         diamonds=winner["diamonds"] or 0,
         start_date=start_date,
         end_date=end_date,
     )
 
-    ig_url = f"https://instagram.com/{winner['instagram']}" if winner["instagram"] else INSTAGRAM_MAIN_URL
     kb = InlineKeyboardMarkup(
         inline_keyboard=[
-            [InlineKeyboardButton(text="📸 Instagram tekshirish", url=ig_url)],
             [InlineKeyboardButton(text="✅ Tasdiqlash", callback_data="confirm_last_random")]
         ]
     )
@@ -1134,7 +1119,6 @@ async def random_confirm(call: CallbackQuery):
         f"🏆 <b>Random g‘olibi aniqlandi!</b>\n\n"
         f"👤 Ism: {winner_name}\n"
         f"🆔 Telegram ID: {winner['user_id']}\n"
-        f"📸 Instagram: @{winner['instagram'] or '-'}\n"
         f"🎫 FEST ID: {winner['fest_id'] or '-'}\n"
         f"💎 Ball: {winner['diamonds'] or 0}\n\n"
         f"📅 Oralig‘: {start_date} → {end_date}",
@@ -1205,8 +1189,7 @@ async def fallback(message: Message):
             f"🆘 <b>Yangi yordam xabari</b>\n\n"
             f"👤 {user['full_name'] or user['tg_name']}\n"
             f"🆔 {message.from_user.id}\n"
-            f"🎫 {user['fest_id'] or '-'}\n"
-            f"📸 @{user['instagram'] or '-'}\n\n"
+            f"🎫 {user['fest_id'] or '-'}\n\n"
             f"💬 {message.text}\n\n"
             f"Javob yozish uchun /reply_{message.from_user.id}"
         )

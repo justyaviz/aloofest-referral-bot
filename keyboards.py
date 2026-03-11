@@ -1,49 +1,105 @@
-import os
+import hmac
+import hashlib
+from aiogram.types import (
+    InlineKeyboardMarkup,
+    InlineKeyboardButton,
+    ReplyKeyboardMarkup,
+    KeyboardButton,
+)
+from config import (
+    CHANNEL_URL,
+    BASE_URL,
+    WEBAPP_SECRET,
+    INSTAGRAM_MAIN_URL,
+)
 
 
-def parse_admin_ids(raw: str) -> set[int]:
-    result: set[int] = set()
-    for item in raw.split(","):
-        item = item.strip()
-        if item.isdigit():
-            result.add(int(item))
-    return result
+def sign_uid(uid: int) -> str:
+    return hmac.new(
+        WEBAPP_SECRET.encode(),
+        str(uid).encode(),
+        hashlib.sha256
+    ).hexdigest()
 
 
-BOT_TOKEN = os.getenv("BOT_TOKEN", "").strip()
-BOT_USERNAME = os.getenv("BOT_USERNAME", "").replace("@", "").strip()
+def start_keyboard() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="✅ ISHTIROK ETAMAN", callback_data="join_now")]
+        ]
+    )
 
-BASE_URL = os.getenv("BASE_URL", "").rstrip("/")
-WEBAPP_SECRET = os.getenv("WEBAPP_SECRET", "change-me-secret").strip()
 
-CHANNEL_USERNAME = os.getenv("CHANNEL_USERNAME", "aloo_uzb").replace("@", "").strip()
-SHOP_BOT_USERNAME = os.getenv("SHOP_BOT_USERNAME", "aloouz_bot").replace("@", "").strip()
+def rules_keyboard() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="📋 konkurs shartlari", callback_data="show_rules")]
+        ]
+    )
 
-CHANNEL_URL = f"https://t.me/{CHANNEL_USERNAME}"
-SHOP_BOT_URL = f"https://t.me/{SHOP_BOT_USERNAME}"
-BOT_URL = f"https://t.me/{BOT_USERNAME}" if BOT_USERNAME else ""
 
-INSTAGRAM_MAIN_URL = os.getenv("INSTAGRAM_MAIN_URL", "https://instagram.com/aloo.uz_").strip()
-INSTAGRAM_RULE_TEXT = os.getenv(
-    "INSTAGRAM_RULE_TEXT",
-    "@aloo.uz_ profiliga va u obuna bo‘lgan 15 ta profilga ham obuna bo‘lish majburiy",
-).strip()
+def subscribe_keyboard() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="📢 Telegram kanal", url=CHANNEL_URL)],
+            [InlineKeyboardButton(text="📸 Instagram profil", url=INSTAGRAM_MAIN_URL)],
+            [InlineKeyboardButton(text="✅ Tekshirish", callback_data="check_subscription")],
+        ]
+    )
 
-ADMIN_IDS = parse_admin_ids(os.getenv("ADMIN_IDS", ""))
 
-DB_PATH = os.getenv("DB_PATH", "bot.db").strip()
-PORT = int(os.getenv("PORT", "8080"))
+def register_keyboard(user_id: int) -> InlineKeyboardMarkup:
+    sig = sign_uid(user_id)
+    register_url = f"{BASE_URL}/register?uid={user_id}&sig={sig}"
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="🌐 RO‘YXATDAN O‘TISH", url=register_url)]
+        ]
+    )
 
-REGISTRATION_BONUS = int(os.getenv("REGISTRATION_BONUS", "5"))
-REFERRAL_BONUS = int(os.getenv("REFERRAL_BONUS", "5"))
 
-REFERRAL_VIDEO_FILE_ID = os.getenv("REFERRAL_VIDEO_FILE_ID", "").strip()
+def after_registration_keyboard() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="🚀 BOSHLASH", callback_data="open_main_menu")]
+        ]
+    )
 
-if not BOT_TOKEN:
-    raise RuntimeError("BOT_TOKEN topilmadi")
 
-if not BASE_URL:
-    raise RuntimeError("BASE_URL topilmadi")
+def phone_keyboard() -> ReplyKeyboardMarkup:
+    return ReplyKeyboardMarkup(
+        keyboard=[
+            [KeyboardButton(text="📱 Raqamni ulashish", request_contact=True)]
+        ],
+        resize_keyboard=True,
+        one_time_keyboard=True
+    )
 
-if not BOT_USERNAME:
-    raise RuntimeError("BOT_USERNAME topilmadi")
+
+def main_menu() -> ReplyKeyboardMarkup:
+    return ReplyKeyboardMarkup(
+        keyboard=[
+            [KeyboardButton(text="👥 Do‘stlarni taklif qilish")],
+            [KeyboardButton(text="🏆 Reyting (TOP 10)"), KeyboardButton(text="🎲 Random o‘yin")],
+            [KeyboardButton(text="💎 Mening ballarim"), KeyboardButton(text="📊 Statistikam")],
+            [KeyboardButton(text="🎁 Sovg‘alar"), KeyboardButton(text="ℹ️ konkurs haqida")],
+            [KeyboardButton(text="🆘 Yordam")],
+        ],
+        resize_keyboard=True
+    )
+
+
+def admin_menu() -> ReplyKeyboardMarkup:
+    return ReplyKeyboardMarkup(
+        keyboard=[
+            [KeyboardButton(text="📋 Mijozlar ro‘yxati"), KeyboardButton(text="🎲 Random admin")],
+            [KeyboardButton(text="🏆 TOP 10 admin"), KeyboardButton(text="📤 Excel export")],
+            [KeyboardButton(text="📊 Statistika"), KeyboardButton(text="🌍 Hududiy statistika")],
+            [KeyboardButton(text="🎟 PROMO"), KeyboardButton(text="⛔ Ban user")],
+            [KeyboardButton(text="✅ Unban user"), KeyboardButton(text="🎁 Sovg‘alarni o‘zgartirish")],
+            [KeyboardButton(text="📣 Broadcast"), KeyboardButton(text="🔎 User qidirish")],
+            [KeyboardButton(text="💬 Userga xabar yuborish"), KeyboardButton(text="📢 Reklama joylash")],
+            [KeyboardButton(text="📢 Reklamalar ro‘yxati"), KeyboardButton(text="🏠 Oddiy menyu")],
+        ],
+        resize_keyboard=True
+    )

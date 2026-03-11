@@ -8,7 +8,6 @@ from aiogram.types import (
 )
 from config import (
     CHANNEL_URL,
-    SHOP_BOT_URL,
     BASE_URL,
     WEBAPP_SECRET,
     INSTAGRAM_MAIN_URL,

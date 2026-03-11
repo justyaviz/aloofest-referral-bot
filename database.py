@@ -420,7 +420,10 @@ class Database:
             cur = await db.execute("SELECT COALESCE(SUM(diamonds),0) FROM users")
             total_diamonds = (await cur.fetchone())[0]
 
-            cur = await db.execute("SELECT COUNT(*) FROM users WHERE referral_count >= 3 AND diamonds >= 15 AND banned = 0 AND registered = 1")
+            cur = await db.execute("""
+                SELECT COUNT(*) FROM users
+                WHERE referral_count >= 3 AND diamonds >= 15 AND banned = 0 AND registered = 1
+            """)
             random_ready = (await cur.fetchone())[0]
 
             return {

@@ -10,7 +10,6 @@ from config import (
     CHANNEL_URL,
     BASE_URL,
     WEBAPP_SECRET,
-    INSTAGRAM_MAIN_URL,
 )
 
 
@@ -42,7 +41,6 @@ def subscribe_keyboard() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
         inline_keyboard=[
             [InlineKeyboardButton(text="📢 Telegram kanal", url=CHANNEL_URL)],
-            [InlineKeyboardButton(text="📸 Instagram profil", url=INSTAGRAM_MAIN_URL)],
             [InlineKeyboardButton(text="✅ Tekshirish", callback_data="check_subscription")],
         ]
     )

@@ -85,82 +85,131 @@ class RandomState(StatesGroup):
 
 
 START_TEXT = """
-🎉 Kutib oling aloo'dan <b>MEGA KONKURS — aloofest</b>!
+🎉 Kutib oling, “aloo”dan navbatdagi yirik yutuqli loyiha — <b>“aloofest” MEGA KONKURSI</b>!
 
-Keling, endi sovg'alar ro'yxati bilan tanishtiraman 👇
+Ushbu mega konkurs kirib kelayotgan <b>Ramazon Hayiti</b> munosabati bilan “aloo” tomonidan siz azizlar uchun hayitlik tuhfa sifatida tashkil etilmoqda. 💙
 
-🎯 Sizda 2 xil yutish imkoniyati bor:
+Sizda <b>2 xil usulda g‘olib bo‘lish</b> imkoniyati bor:
 
-1. TOP 3 ga kirish
-2. Random o'yini
+1️⃣ <b>TOP 3 mega konkurs</b>
+2️⃣ <b>Haftalik random o‘yinlari</b>
 
-🎁 <b>TOP 3 uchun sovg'alar:</b>
-🥇 1-o‘rin — Tecno Spark Go 30C
-🥈 2-o‘rin — Mini pech Artel
-🥉 3-o‘rin — Ryugzak
+🎁 <b>Hayit bayrami mega konkurs sovg‘alari:</b>
 
-🎲 <b>Random o'yini (TEST rejim):</b>
-Ro‘yxatdan o‘tgan va kanalga obuna bo‘lgan ishtirokchilar random o‘yinda qatnashadi.
+🥇 1-o‘rin — <b>Redmi Robot Mop 2</b>  
+🥈 2-o‘rin — <b>Novey Senat SC1 Red</b> telefoni  
+🥉 3-o‘rin — <b>Zamonaviy elektr choynak</b>
 
-💎 Hozir test rejimda random uchun do‘st taklif qilish majburiy emas.
+🎲 <b>Haftalik random o‘yinlari:</b>  
+Har hafta davomida kamida <b>3+ do‘stingizni taklif qilib</b>, <b>15+ ball</b> to‘plash orqali random o‘yinida ishtirok eta olasiz.
 
-📅 G‘oliblar jonli efir orqali aniqlanadi.
-Sana bot orqali va @aloo_uzb kanalida e’lon qilinadi.
+Haftalik o‘yinlarda quyidagi qimmatbaho sovg‘alar o‘ynaladi:
 
-Hammaga omad! 🍀
+• AirPods  
+• Telefon  
+• Smartwatch  
+• Planshet  
+• va boshqa qimmatbaho sovg‘alar
+
+📅 G‘oliblar bot orqali hamda <b>@aloo_uzb</b> kanalida e’lon qilinadi.
+
+🍀 Omad sizga yor bo‘lsin!
 """
 
 RULES_TEXT = f"""
-🏆 <b>aloofest konkurs tizimi (TEST model)</b>
+🏆 <b>“aloofest” MEGA KONKURSI qoidalari</b>
 
-🎯 <b>Ball tizimi</b>
-1 ta do‘st taklif qilish = 5 ball
+Ushbu konkursda g‘olib bo‘lishning <b>2 xil turi</b> mavjud:
 
-Ball TOP reytingda ishlatiladi.
+1️⃣ <b>TOP 3 mega konkurs</b>  
+2️⃣ <b>Haftalik random o‘yinlari</b>
 
-🎲 <b>Random o‘yini (TEST rejim)</b>
+🎯 <b>Ball tizimi:</b>  
+Har bir taklif qilingan do‘st uchun sizga <b>+5 ball</b> beriladi.
 
-Ishtirok sharti:
-✅ Telegram kanalga obuna bo‘lish
-✅ Web orqali ro‘yxatdan o‘tish
+Misollar:  
+1 do‘st = 5 ball  
+3 do‘st = 15 ball  
+5 do‘st = 25 ball  
+10 do‘st = 50 ball
 
-❗ Hozir test uchun randomda qatnashish uchun 3 ta referal shart emas.
+🥇 <b>TOP 3 mega konkurs</b>  
+Eng ko‘p ball to‘plagan ishtirokchilar hayit bayrami mega konkursining asosiy g‘oliblari bo‘ladi.
 
-🥇 <b>TOP konkurs</b>
+🎁 Sovg‘alar:  
+1-o‘rin — Redmi Robot Mop 2  
+2-o‘rin — Novey Senat SC1 Red telefoni  
+3-o‘rin — Zamonaviy elektr choynak
 
-TOP reyting:
-Eng ko‘p ball yig‘ganlar yutadi.
+🎲 <b>Haftalik random o‘yinlari</b>  
+Har hafta davomida <b>kamida 3+ do‘st taklif qilib</b>, <b>15+ ball</b> to‘plagan ishtirokchilar random o‘yinida qatnasha oladi.
 
-📋 <b>Asosiy shartlar</b>
-1️⃣ Telegram — @{CHANNEL_USERNAME} kanaliga obuna bo‘lish
-2️⃣ Instagram — asosiy profilga va u obuna bo‘lgan 15 ta profilga obuna bo‘lish
-3️⃣ Web sahifa orqali ro‘yxatdan o‘tish
+Haftalik random sovg‘alariga quyidagilar kiradi:  
+• AirPods  
+• Telefon  
+• Smartwatch  
+• Planshet  
+• va boshqa qimmatbaho sovg‘alar
 
-❗ Instagram obunasi majburiy.
-Agar foydalanuvchi Instagram shartlarini bajarmagan bo‘lsa, u g‘olib deb tasdiqlanmaydi.
+📋 <b>Ishtirok etish uchun:</b>  
+• Telegram kanalga obuna bo‘ling  
+• Ro‘yxatdan o‘ting  
+• Do‘stlaringizni taklif qiling  
+• Ball to‘plang va g‘olib bo‘ling
+
+❗ Instagram bo‘yicha shartlar ham majburiy hisoblanadi. Agar ishtirokchi Instagram shartlarini bajarmagan bo‘lsa, g‘oliblik tasdiqlanmaydi.
 
 📸 Instagram bo‘yicha shart:
 {INSTAGRAM_RULE_TEXT}
 """
 
 ABOUT_TEXT = f"""
-ℹ️ <b>aloofest haqida</b>
+ℹ️ <b>“aloofest” MEGA KONKURSI haqida</b>
 
-aloofest — bu aloo tomonidan tashkil etilgan maxsus yutuqli konkurs bo‘lib, unda siz:
-• do‘stlaringizni taklif qilish
-• ball to‘plash
-• TOP reytingga kirish
-• random o‘yinda ishtirok etish
+“aloofest” — bu kirib kelayotgan <b>Ramazon Hayiti</b> munosabati bilan “aloo” tomonidan tashkil etilgan maxsus hayitlik mega konkursdir.
 
-orqali qimmatbaho sovg‘alarni yutib olishingiz mumkin.
+Bu konkursda siz 2 xil usulda g‘olib bo‘lishingiz mumkin:
 
-🎲 Hozir test rejimda random uchun referal sharti vaqtincha o‘chirilgan.
+1️⃣ <b>TOP 3 mega konkurs</b>  
+Eng ko‘p ball to‘plagan ishtirokchilar asosiy hayit sovg‘alarini yutadi.
 
-📸 Instagram sharti:
-{INSTAGRAM_RULE_TEXT}
+2️⃣ <b>Haftalik random o‘yinlari</b>  
+Har hafta 3+ do‘st taklif qilib, 15+ ball yig‘ganlar random o‘yinida qatnashadi.
 
-Asosiy profil:
-{INSTAGRAM_MAIN_URL}
+🎁 Sovg‘alar orasida:  
+• Redmi Robot Mop 2  
+• Novey Senat SC1 Red telefoni  
+• Zamonaviy elektr choynak  
+• AirPods  
+• Telefon  
+• Smartwatch  
+• Planshet  
+• va boshqa qimmatbaho sovg‘alar mavjud
+
+📢 Barcha yangiliklar bot orqali va @aloo_uzb kanalida e’lon qilinadi.
+"""
+
+GUIDE_TEXT = """
+🎉 <b>Tabriklaymiz!</b>
+
+Siz “aloofest” mega konkursida muvaffaqiyatli ro‘yxatdan o‘tdingiz va boshlang‘ich <b>ball</b> qo‘lga kiritdingiz. ✅
+
+📌 Endi keyingi bosqich juda muhim:  
+quyidagi <b>qisqa yo‘riqnoma</b> orqali konkursda qanday qatnashish, ball yig‘ish va g‘olib bo‘lish tartibini ko‘rib chiqing.
+
+🎯 Sizda 2 xil imkoniyat bor:  
+• TOP 3 mega konkursda g‘olib bo‘lish  
+• Haftalik random o‘yinlarida sovg‘a yutish
+
+📹 <b>Qisqa yo‘riqnoma:</b>  
+• konkursda qanday ishtirok etish  
+• do‘st taklif qilib ball yig‘ish  
+• TOP 3 ga chiqish  
+• haftalik random o‘yinida qatnashish
+
+👥 Endi do‘stlaringizni taklif qiling, ko‘proq ball yig‘ing va hayit oldidan “aloo”dan qimmatbaho sovg‘alarni yutib oling!
+
+👇 Quyidagi menyular orqali davom eting
 """
 
 
@@ -408,7 +457,7 @@ async def set_ready(message: Message):
     updated_user = await db.get_user(user_id)
 
     await message.answer(
-        f"✅ User test uchun tayyorlandi.\n\n"
+        f"✅ User random uchun tayyorlandi.\n\n"
         f"🆔 User: {user_id}\n"
         f"👤 Ism: {updated_user['full_name'] or updated_user['tg_name'] or updated_user['username'] or '-'}\n"
         f"💎 Ball: {updated_user['diamonds']}\n"
@@ -433,10 +482,7 @@ async def open_main_menu(call: CallbackQuery):
         await call.answer("Raqamni ulashing")
         return
 
-    await call.message.answer(
-        f"🚀 Zo‘r, {user['full_name'] or user['tg_name']}!\n\nQuyidagi menyulardan foydalaning 👇",
-        reply_markup=main_menu()
-    )
+    await call.message.answer(GUIDE_TEXT, reply_markup=main_menu())
     await call.answer("Menyu ochildi")
 
 
@@ -451,7 +497,7 @@ async def save_contact(message: Message):
     await db.save_phone(message.from_user.id, phone)
 
     await message.answer(
-        "✅ Telefon raqamingiz qabul qilindi.\n\nEndi konkurs menyularidan foydalanishingiz mumkin 👇",
+        GUIDE_TEXT,
         reply_markup=main_menu()
     )
 
@@ -509,9 +555,18 @@ async def referrals_menu(message: Message):
 
     link = await get_ref_link(message.from_user.id)
     await message.answer(
-        f"👥 <b>Do‘stlarni taklif qilish</b>\n\n"
-        f"Har bir muvaffaqiyatli taklif uchun sizga 5 ball beriladi.\n\n"
-        f"🔗 Sizning maxsus havolangiz:\n{link}"
+        "🔥 <b>Hayit oldidan super imkoniyat!</b>\n\n"
+        "“aloo” siz uchun <b>“aloofest” MEGA KONKURSI</b>ni taqdim etadi!\n\n"
+        "Do‘stlaringizni taklif qiling, ball to‘plang va quyidagi qimmatbaho sovg‘alarni yutib oling:\n\n"
+        "🏆 <b>Asosiy mega sovg‘alar:</b>\n"
+        "🥇 Redmi Robot Mop 2\n"
+        "🥈 Novey Senat SC1 Red telefoni\n"
+        "🥉 Zamonaviy elektr choynak\n\n"
+        "🎲 <b>Haftalik random sovg‘alari:</b>\n"
+        "AirPods, telefon, smartwatch, planshet va boshqa ko‘plab sovg‘alar!\n\n"
+        "💎 Har bir taklif qilgan do‘stingiz uchun sizga <b>+5 ball</b> beriladi.\n\n"
+        "📌 Sizning maxsus havolangiz orqali ro‘yxatdan o‘tgan har bir ishtirokchi sizni g‘alabaga yanada yaqinlashtiradi.\n\n"
+        f"🚀 Hoziroq ulashing va hayit oldidan omadni qo‘ldan boy bermang:\n\n{link}"
     )
 
 
@@ -536,14 +591,23 @@ async def random_menu(message: Message):
         await message.answer("Avval ro‘yxatdan o‘ting.")
         return
 
+    refs = user["referral_count"] or 0
     balls = user["diamonds"] or 0
-    status = "✅ Siz random o‘yinda qatnasha olasiz."
+    status = "✅ Siz haftalik random o‘yinida qatnasha olasiz!" if refs >= 3 else "❌ Siz hali random uchun yetarli shartni bajarmadingiz. Kamida 3 do‘st taklif qiling."
 
     await message.answer(
-        f"🎲 <b>Random o‘yin (TEST rejim)</b>\n\n"
-        f"💎 Ball: {balls}\n\n"
-        f"{status}\n"
-        f"📌 Hozir test rejimda random uchun referal sharti vaqtincha o‘chirilgan."
+        f"🎲 <b>Haftalik random o‘yinlari</b>\n\n"
+        f"Har hafta davomida kamida <b>3+ do‘st</b> taklif qilib, <b>15+ ball</b> to‘plagan ishtirokchilar random o‘yinida qatnasha oladi.\n\n"
+        f"🎁 Haftalik o‘yinlarda quyidagi sovg‘alar o‘ynaladi:\n"
+        f"• AirPods\n"
+        f"• Telefon\n"
+        f"• Smartwatch\n"
+        f"• Planshet\n"
+        f"• va boshqa qimmatbaho sovg‘alar\n\n"
+        f"📊 Sizning holatingiz:\n"
+        f"👥 Taklif qilingan do‘stlar: {refs}\n"
+        f"💎 Ballar: {balls}\n\n"
+        f"{status}"
     )
 
 
@@ -582,15 +646,20 @@ async def my_stats(message: Message):
 
 @dp.message(F.text == "🎁 Sovg‘alar")
 async def prizes_menu(message: Message):
-    prizes = await db.get_prizes()
-    if not prizes:
-        await message.answer("Sovg‘alar hali kiritilmagan.")
-        return
-
-    text = "🎁 <b>aloofest sovg‘alari</b>\n\n"
-    for item in prizes:
-        text += f"{item['place_name']} — <b>{item['title']}</b>\n{item['description']}\n\n"
-    await message.answer(text)
+    await message.answer(
+        "🎁 <b>“aloofest” mega konkurs sovg‘alari</b>\n\n"
+        "🏆 <b>Hayit bayrami mega konkursi:</b>\n"
+        "🥇 1-o‘rin — Redmi Robot Mop 2\n"
+        "🥈 2-o‘rin — Novey Senat SC1 Red telefoni\n"
+        "🥉 3-o‘rin — Zamonaviy elektr choynak\n\n"
+        "🎲 <b>Haftalik random sovg‘alari:</b>\n"
+        "• AirPods\n"
+        "• Telefon\n"
+        "• Smartwatch\n"
+        "• Planshet\n"
+        "• va boshqa qimmatbaho sovg‘alar\n\n"
+        "🍀 Har bir ball sizni sovg‘alarga yaqinlashtiradi!"
+    )
 
 
 @dp.message(F.text == "🆘 Yordam")
@@ -1065,7 +1134,7 @@ async def random_confirm(call: CallbackQuery, state: FSMContext):
 
     users = await db.get_random_candidates(start_ts, end_ts)
     if not users:
-        await call.message.edit_text("❌ Bu oralig‘da random uchun ishtirokchilar topilmadi.")
+        await call.message.edit_text("❌ Bu oralig‘da 3+ referal (15+ ball) ishtirokchilar topilmadi.")
         await state.clear()
         await call.answer()
         return

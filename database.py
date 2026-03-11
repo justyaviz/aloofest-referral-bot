@@ -246,17 +246,24 @@ class Database:
                 """, (REGISTRATION_BONUS + promo_bonus, user_id))
 
                 if user["referrer_id"]:
+                    before_cur = await db.execute(
+                        "SELECT COUNT(*) FROM referrals WHERE invited_user_id = ?",
+                        (user_id,)
+                    )
+                    before_count = (await before_cur.fetchone())[0]
+
                     await db.execute("""
                         INSERT OR IGNORE INTO referrals (invited_user_id, inviter_id, created_at)
                         VALUES (?, ?, ?)
                     """, (user_id, user["referrer_id"], now))
 
-                    cur2 = await db.execute(
+                    after_cur = await db.execute(
                         "SELECT COUNT(*) FROM referrals WHERE invited_user_id = ?",
                         (user_id,)
                     )
-                    inserted = (await cur2.fetchone())[0]
-                    if inserted:
+                    after_count = (await after_cur.fetchone())[0]
+
+                    if before_count == 0 and after_count == 1:
                         await db.execute("""
                             UPDATE users
                             SET diamonds = diamonds + ?, referral_count = referral_count + 1
@@ -381,7 +388,7 @@ class Database:
             await db.execute("""
                 INSERT INTO pending_support_replies (admin_id, target_user_id)
                 VALUES (?, ?)
-                ON CONFLICT(admin_id) DO UPDATE SET target_user_id=excluded.target_user_id
+                ON CONFLICT(admin_id) DO UPDATE SET target_user_id = excluded.target_user_id
             """, (admin_id, target_user_id))
             await db.commit()
 

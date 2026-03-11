@@ -26,6 +26,7 @@ from config import (
     ADMIN_IDS,
     INSTAGRAM_RULE_TEXT,
     INSTAGRAM_MAIN_URL,
+    REFERRAL_VIDEO_FILE_ID,
 )
 from database import db
 from keyboards import (
@@ -76,12 +77,6 @@ class PrizeState(StatesGroup):
     waiting_place = State()
     waiting_title = State()
     waiting_desc = State()
-
-
-class RandomState(StatesGroup):
-    waiting_start = State()
-    waiting_end = State()
-    ready_confirm = State()
 
 
 START_TEXT = """
@@ -337,22 +332,13 @@ async def add_ball(message: Message):
         return
 
     parts = (message.text or "").split()
-
     if len(parts) != 3:
-        await message.answer(
-            "❌ Format noto‘g‘ri.\n\n"
-            "To‘g‘ri format:\n"
-            "/addball USER_ID BALL\n\n"
-            "Misol:\n"
-            "/addball 8124320409 50"
-        )
+        await message.answer("Format: /addball USER_ID BALL")
         return
 
-    user_id_raw = parts[1].strip()
-    points_raw = parts[2].strip()
-
+    user_id_raw, points_raw = parts[1].strip(), parts[2].strip()
     if not user_id_raw.isdigit() or not points_raw.lstrip("-").isdigit():
-        await message.answer("❌ USER_ID va BALL raqam bo‘lishi kerak.")
+        await message.answer("USER_ID va BALL raqam bo‘lishi kerak.")
         return
 
     user_id = int(user_id_raw)
@@ -360,7 +346,7 @@ async def add_ball(message: Message):
 
     user = await db.get_user(user_id)
     if not user:
-        await message.answer("❌ User topilmadi.")
+        await message.answer("User topilmadi.")
         return
 
     await db.add_points(user_id, points)
@@ -381,22 +367,13 @@ async def add_ref(message: Message):
         return
 
     parts = (message.text or "").split()
-
     if len(parts) != 3:
-        await message.answer(
-            "❌ Format noto‘g‘ri.\n\n"
-            "To‘g‘ri format:\n"
-            "/addref USER_ID REF_SONI\n\n"
-            "Misol:\n"
-            "/addref 8124320409 3"
-        )
+        await message.answer("Format: /addref USER_ID REF_SONI")
         return
 
-    user_id_raw = parts[1].strip()
-    refs_raw = parts[2].strip()
-
+    user_id_raw, refs_raw = parts[1].strip(), parts[2].strip()
     if not user_id_raw.isdigit() or not refs_raw.isdigit():
-        await message.answer("❌ USER_ID va REF_SONI raqam bo‘lishi kerak.")
+        await message.answer("USER_ID va REF_SONI raqam bo‘lishi kerak.")
         return
 
     user_id = int(user_id_raw)
@@ -404,7 +381,7 @@ async def add_ref(message: Message):
 
     user = await db.get_user(user_id)
     if not user:
-        await message.answer("❌ User topilmadi.")
+        await message.answer("User topilmadi.")
         return
 
     await db.add_referrals(user_id, refs)
@@ -425,23 +402,13 @@ async def set_ready(message: Message):
         return
 
     parts = (message.text or "").split()
-
     if len(parts) != 4:
-        await message.answer(
-            "❌ Format noto‘g‘ri.\n\n"
-            "To‘g‘ri format:\n"
-            "/setready USER_ID BALL REF\n\n"
-            "Misol:\n"
-            "/setready 8124320409 25 5"
-        )
+        await message.answer("Format: /setready USER_ID BALL REF")
         return
 
-    user_id_raw = parts[1].strip()
-    diamonds_raw = parts[2].strip()
-    refs_raw = parts[3].strip()
-
+    user_id_raw, diamonds_raw, refs_raw = parts[1].strip(), parts[2].strip(), parts[3].strip()
     if not user_id_raw.isdigit() or not diamonds_raw.isdigit() or not refs_raw.isdigit():
-        await message.answer("❌ USER_ID, BALL va REF raqam bo‘lishi kerak.")
+        await message.answer("USER_ID, BALL va REF raqam bo‘lishi kerak.")
         return
 
     user_id = int(user_id_raw)
@@ -450,7 +417,7 @@ async def set_ready(message: Message):
 
     user = await db.get_user(user_id)
     if not user:
-        await message.answer("❌ User topilmadi.")
+        await message.answer("User topilmadi.")
         return
 
     await db.set_ready_user(user_id, diamonds, refs)
@@ -496,10 +463,7 @@ async def save_contact(message: Message):
     phone = message.contact.phone_number
     await db.save_phone(message.from_user.id, phone)
 
-    await message.answer(
-        GUIDE_TEXT,
-        reply_markup=main_menu()
-    )
+    await message.answer(GUIDE_TEXT, reply_markup=main_menu())
 
 
 @dp.callback_query(F.data == "join_now")
@@ -545,12 +509,11 @@ async def check_subscription(call: CallbackQuery):
     )
     await call.answer("Tasdiqlandi")
 
+
 @dp.message(F.video)
 async def get_video_file_id(message: Message):
     await message.answer(message.video.file_id)
 
-
-REFERRAL_VIDEO_FILE_ID = "BU_YERGA_VIDEO_FILE_ID"
 
 @dp.message(F.text == "👥 Do‘stlarni taklif qilish")
 async def referrals_menu(message: Message):
@@ -576,10 +539,10 @@ async def referrals_menu(message: Message):
         f"{link}"
     )
 
-    await message.answer_video(
-        video=REFERRAL_VIDEO_FILE_ID,
-        caption=caption
-    )
+    if REFERRAL_VIDEO_FILE_ID:
+        await message.answer_video(video=REFERRAL_VIDEO_FILE_ID, caption=caption)
+    else:
+        await message.answer(caption)
 
 
 @dp.message(F.text == "🏆 Reyting (TOP 10)")
@@ -689,11 +652,6 @@ async def about_menu(message: Message):
     await message.answer(ABOUT_TEXT)
 
 
-@dp.message(F.text == "🏠 Oddiy menyu")
-async def back_user_menu(message: Message):
-    await message.answer("🏠 Oddiy menyuga qaytdingiz.", reply_markup=main_menu())
-
-
 @dp.message(F.text == "📋 Mijozlar ro‘yxati")
 async def admin_users_list(message: Message):
     if not is_admin(message.from_user.id):
@@ -704,19 +662,14 @@ async def admin_users_list(message: Message):
         return
     text = "📋 <b>So‘nggi mijozlar ro‘yxati</b>\n\n"
     for user in users:
-        text += (
-            f"🆔 {user['user_id']} | "
-            f"{user['full_name'] or user['tg_name'] or '-'} | "
-            f"{user['fest_id'] or '-'}\n"
-        )
+        text += f"🆔 {user['user_id']} | {user['full_name'] or user['tg_name'] or '-'} | {user['fest_id'] or '-'}\n"
     await message.answer(text)
 
 
 @dp.message(F.text == "🏆 TOP 10 admin")
 async def admin_top(message: Message):
-    if not is_admin(message.from_user.id):
-        return
-    await top_menu(message)
+    if is_admin(message.from_user.id):
+        await top_menu(message)
 
 
 @dp.message(F.text == "📊 Statistika")
@@ -752,16 +705,13 @@ async def admin_region_stats(message: Message):
 async def promo_stats(message: Message):
     if not is_admin(message.from_user.id):
         return
-
     rows = await db.get_promo_stats()
     if not rows:
         await message.answer("PROMO statistika hozircha bo‘sh.")
         return
-
     text = "🎟 <b>PROMO statistika</b>\n\n"
     for idx, row in enumerate(rows, start=1):
         text += f"{idx}. {row['promo_branch']} — {row['promo_code']} — {row['total']} ta\n"
-
     await message.answer(text)
 
 
@@ -897,6 +847,7 @@ async def broadcast_send(message: Message, state: FSMContext):
         try:
             await bot.send_message(user["user_id"], f"📢 <b>aloo yangiligi</b>\n\n{message.text}")
             sent += 1
+            await asyncio.sleep(0.03)
         except Exception:
             pass
     await message.answer(f"Broadcast yakunlandi. Yuborildi: {sent}")
@@ -1029,12 +980,11 @@ async def excel_export(message: Message):
 
 
 @dp.message(F.text == "🎲 Random admin")
-async def random_start(message: Message, state: FSMContext):
+async def random_start(message: Message):
     if not is_admin(message.from_user.id):
         return
 
     now = datetime.now()
-    await state.clear()
     await message.answer(
         "🎲 <b>RANDOM ORQALI G‘OLIBNI ANIQLASH</b>\n\n📅 BOSHLANISH SANASINI TANLANG",
         reply_markup=build_calendar(now.year, now.month, "rnd_start")
@@ -1068,92 +1018,89 @@ async def rnd_start_nav(call: CallbackQuery):
 
 
 @dp.callback_query(F.data.startswith("rnd_start:pick:"))
-async def rnd_start_pick(call: CallbackQuery, state: FSMContext):
+async def rnd_start_pick(call: CallbackQuery):
     _, _, y, m, d = call.data.split(":")
     start_date = f"{int(y):04d}-{int(m):02d}-{int(d):02d}"
-    await state.update_data(start_date=start_date)
 
     now = datetime.now()
     await call.message.edit_text(
         f"✅ Boshlanish sanasi: <b>{start_date}</b>\n\n📅 Endi <b>TUGASH SANASINI TANLANG</b>",
-        reply_markup=build_calendar(now.year, now.month, "rnd_end")
+        reply_markup=build_calendar(now.year, now.month, f"rnd_end:{start_date}")
     )
     await call.answer()
 
 
-@dp.callback_query(F.data.startswith("rnd_end:nav:"))
-async def rnd_end_nav(call: CallbackQuery):
-    _, _, y, m, direction = call.data.split(":")
+@dp.callback_query(F.data.startswith("rnd_end:"))
+async def rnd_end_router(call: CallbackQuery):
+    parts = call.data.split(":")
+    if len(parts) < 5:
+        await call.answer()
+        return
+
+    _, start_date, action, y, m, *rest = parts
     y = int(y)
     m = int(m)
 
-    if direction == "prev":
-        m -= 1
-        if m == 0:
-            m = 12
-            y -= 1
-    else:
-        m += 1
-        if m == 13:
-            m = 1
-            y += 1
+    if action == "nav":
+        direction = rest[0]
+        if direction == "prev":
+            m -= 1
+            if m == 0:
+                m = 12
+                y -= 1
+        else:
+            m += 1
+            if m == 13:
+                m = 1
+                y += 1
 
-    await call.message.edit_reply_markup(reply_markup=build_calendar(y, m, "rnd_end"))
-    await call.answer()
+        await call.message.edit_reply_markup(reply_markup=build_calendar(y, m, f"rnd_end:{start_date}"))
+        await call.answer()
+        return
 
+    if action == "pick":
+        d = int(rest[0])
+        end_date = f"{y:04d}-{m:02d}-{d:02d}"
 
-@dp.callback_query(F.data.startswith("rnd_end:pick:"))
-async def rnd_end_pick(call: CallbackQuery, state: FSMContext):
-    _, _, y, m, d = call.data.split(":")
-    end_date = f"{int(y):04d}-{int(m):02d}-{int(d):02d}"
-    data = await state.get_data()
-    start_date = data.get("start_date")
+        kb = InlineKeyboardMarkup(
+            inline_keyboard=[
+                [InlineKeyboardButton(text="🎯 G‘OLIBNI ANIQLASH", callback_data=f"rnd_confirm:{start_date}:{end_date}")]
+            ]
+        )
 
-    await state.update_data(end_date=end_date)
-
-    kb = InlineKeyboardMarkup(
-        inline_keyboard=[
-            [InlineKeyboardButton(text="🎯 G‘OLIBNI ANIQLASH", callback_data="rnd_confirm")]
-        ]
-    )
-
-    await call.message.edit_text(
-        f"✅ Boshlanish: <b>{start_date}</b>\n"
-        f"✅ Tugash: <b>{end_date}</b>\n\n"
-        f"Endi g‘olibni aniqlash tugmasini bosing.",
-        reply_markup=kb
-    )
-    await call.answer()
+        await call.message.edit_text(
+            f"✅ Boshlanish: <b>{start_date}</b>\n"
+            f"✅ Tugash: <b>{end_date}</b>\n\n"
+            f"Endi g‘olibni aniqlash tugmasini bosing.",
+            reply_markup=kb
+        )
+        await call.answer()
 
 
-@dp.callback_query(F.data == "rnd_confirm")
-async def random_confirm(call: CallbackQuery, state: FSMContext):
+@dp.callback_query(F.data.startswith("rnd_confirm:"))
+async def random_confirm(call: CallbackQuery):
     if not is_admin(call.from_user.id):
         return
 
-    data = await state.get_data()
-    start_date = data.get("start_date")
-    end_date = data.get("end_date")
+    _, start_date, end_date = call.data.split(":", 2)
 
     start_ts = parse_date_to_ts(start_date, end_of_day=False)
     end_ts = parse_date_to_ts(end_date, end_of_day=True)
 
     if start_ts is None or end_ts is None or end_ts < start_ts:
         await call.message.edit_text("❌ Sana oralig‘i noto‘g‘ri.")
-        await state.clear()
         await call.answer()
         return
 
     users = await db.get_random_candidates(start_ts, end_ts)
     if not users:
         await call.message.edit_text("❌ Bu oralig‘da 3+ referal (15+ ball) ishtirokchilar topilmadi.")
-        await state.clear()
         await call.answer()
         return
 
     await call.message.edit_text("🎲 Random boshlandi...\n\n✨ G‘olib aniqlanmoqda...\nLoading: 0%")
     for p in [10, 25, 40, 55, 70, 85, 100]:
-        await asyncio.sleep(1.2)
+        await asyncio.sleep(1.0)
         await call.message.edit_text(
             f"🎲 Random boshlandi...\n\n"
             f"🔍 Ishtirokchilar tekshirilmoqda...\n"
@@ -1193,8 +1140,6 @@ async def random_confirm(call: CallbackQuery, state: FSMContext):
         f"📅 Oralig‘: {start_date} → {end_date}",
         reply_markup=kb
     )
-
-    await state.clear()
     await call.answer()
 
 
@@ -1218,6 +1163,20 @@ async def confirm_last_random(call: CallbackQuery):
     except Exception:
         pass
     await call.answer("G‘olib tasdiqlandi", show_alert=True)
+
+
+@dp.message(Command(commands=["reply"]))
+async def reply_help(message: Message):
+    await message.answer("To‘g‘ri format: /reply_123456789")
+
+
+@dp.message(F.text.regexp(r"^/reply_\d+$"))
+async def reply_dynamic(message: Message):
+    if not is_admin(message.from_user.id):
+        return
+    target_id = int(message.text.split("_")[1])
+    await db.set_pending_reply(message.from_user.id, target_id)
+    await message.answer(f"Endi {target_id} foydalanuvchiga yuboriladigan javob matnini yozing.")
 
 
 @dp.message()
@@ -1261,20 +1220,6 @@ async def fallback(message: Message):
         return
 
     await message.answer("Kerakli bo‘limni tanlang.")
-
-
-@dp.message(Command(commands=["reply"]))
-async def reply_help(message: Message):
-    await message.answer("To‘g‘ri format: /reply_123456789")
-
-
-@dp.message(F.text.regexp(r"^/reply_\d+$"))
-async def reply_dynamic(message: Message):
-    if not is_admin(message.from_user.id):
-        return
-    target_id = int(message.text.split("_")[1])
-    await db.set_pending_reply(message.from_user.id, target_id)
-    await message.answer(f"Endi {target_id} foydalanuvchiga yuboriladigan javob matnini yozing.")
 
 
 async def main():

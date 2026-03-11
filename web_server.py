@@ -1,70 +1,26 @@
 import html
 import json
-import aiohttp
 from aiohttp import web
 
-from config import PORT, BOT_TOKEN, BOT_URL
+from config import PORT, BOT_URL
 from database import db
-from keyboards import sign_uid
+from keyboards import sign_uid, after_registration_keyboard
 
 DISTRICTS = {
-    "Toshkent sh.": [
-        "Bektemir", "Chilonzor", "Yakkasaroy", "Mirobod", "Mirzo Ulug‘bek",
-        "Olmazor", "Sergeli", "Shayxontohur", "Uchtepa", "Yashnobod", "Yunusobod"
-    ],
-    "Toshkent vil.": [
-        "Angren", "Bekobod sh.", "Chirchiq", "Olmaliq", "Ohangaron sh.",
-        "Yangiyo‘l sh.", "Nurafshon", "Bo‘ka", "Bo‘stonliq", "Chinoz",
-        "Qibray", "Parkent", "Piskent", "Zangiota"
-    ],
-    "Andijon": [
-        "Andijon sh.", "Xonobod", "Asaka", "Baliqchi", "Bo‘ston",
-        "Izboskan", "Marhamat", "Paxtaobod", "Shahrixon"
-    ],
-    "Farg‘ona": [
-        "Farg‘ona sh.", "Qo‘qon", "Marg‘ilon", "Quvasoy", "Oltiariq",
-        "Bag‘dod", "Beshariq", "Dang‘ara", "Quva", "Rishton"
-    ],
-    "Namangan": [
-        "Namangan sh.", "Chust", "Kosonsoy", "Pop", "To‘raqo‘rg‘on",
-        "Uychi", "Chortoq", "Yangiqo‘rg‘on"
-    ],
-    "Samarqand": [
-        "Samarqand sh.", "Kattaqo‘rg‘on sh.", "Bulung‘ur", "Ishtixon",
-        "Jomboy", "Nurobod", "Paxtachi", "Payariq", "Toyloq", "Urgut"
-    ],
-    "Buxoro": [
-        "Buxoro sh.", "Kogon sh.", "G‘ijduvon", "Jondor", "Olot",
-        "Qorako‘l", "Romitan", "Shofirkon", "Vobkent"
-    ],
-    "Xorazm": [
-        "Urganch sh.", "Xiva sh.", "Bog‘ot", "Gurlan", "Hazorasp",
-        "Xonqa", "Qo‘shko‘pir", "Shovot", "Yangiariq"
-    ],
-    "Qashqadaryo": [
-        "Qarshi sh.", "Shahrisabz sh.", "Dehqonobod", "Kasbi", "Kitob",
-        "Koson", "Muborak", "Nishon", "Qamashi", "Yakkabog‘"
-    ],
-    "Surxondaryo": [
-        "Termiz sh.", "Angor", "Boysun", "Denov", "Jarqo‘rg‘on",
-        "Qumqo‘rg‘on", "Sherobod", "Sho‘rchi", "Uzun"
-    ],
-    "Navoiy": [
-        "Navoiy sh.", "Zarafshon", "Karmana", "Konimex", "Navbahor",
-        "Nurota", "Qiziltepa", "Uchquduq", "Xatirchi"
-    ],
-    "Jizzax": [
-        "Jizzax sh.", "Arnasoy", "Baxmal", "Do‘stlik", "Forish",
-        "G‘allaorol", "Paxtakor", "Yangiobod", "Zomin"
-    ],
-    "Sirdaryo": [
-        "Guliston sh.", "Shirin", "Yangiyer", "Boyovut", "Guliston tumani",
-        "Mirzaobod", "Oqoltin", "Sardoba", "Xovos"
-    ],
-    "Qoraqalpog‘iston": [
-        "Nukus sh.", "Amudaryo", "Beruniy", "Chimboy", "Mo‘ynoq",
-        "Qo‘ng‘irot", "Shumanay", "To‘rtko‘l", "Xo‘jayli"
-    ],
+    "Toshkent sh.": ["Bektemir", "Chilonzor", "Yakkasaroy", "Mirobod", "Mirzo Ulug‘bek", "Olmazor", "Sergeli", "Shayxontohur", "Uchtepa", "Yashnobod", "Yunusobod"],
+    "Toshkent vil.": ["Angren", "Bekobod sh.", "Chirchiq", "Olmaliq", "Ohangaron sh.", "Yangiyo‘l sh.", "Nurafshon", "Bo‘ka", "Bo‘stonliq", "Chinoz", "Qibray", "Parkent", "Piskent", "Zangiota"],
+    "Andijon": ["Andijon sh.", "Xonobod", "Asaka", "Baliqchi", "Bo‘ston", "Izboskan", "Marhamat", "Paxtaobod", "Shahrixon"],
+    "Farg‘ona": ["Farg‘ona sh.", "Qo‘qon", "Marg‘ilon", "Quvasoy", "Oltiariq", "Bag‘dod", "Beshariq", "Dang‘ara", "Quva", "Rishton"],
+    "Namangan": ["Namangan sh.", "Chust", "Kosonsoy", "Pop", "To‘raqo‘rg‘on", "Uychi", "Chortoq", "Yangiqo‘rg‘on"],
+    "Samarqand": ["Samarqand sh.", "Kattaqo‘rg‘on sh.", "Bulung‘ur", "Ishtixon", "Jomboy", "Nurobod", "Paxtachi", "Payariq", "Toyloq", "Urgut"],
+    "Buxoro": ["Buxoro sh.", "Kogon sh.", "G‘ijduvon", "Jondor", "Olot", "Qorako‘l", "Romitan", "Shofirkon", "Vobkent"],
+    "Xorazm": ["Urganch sh.", "Xiva sh.", "Bog‘ot", "Gurlan", "Hazorasp", "Xonqa", "Qo‘shko‘pir", "Shovot", "Yangiariq"],
+    "Qashqadaryo": ["Qarshi sh.", "Shahrisabz sh.", "Dehqonobod", "Kasbi", "Kitob", "Koson", "Muborak", "Nishon", "Qamashi", "Yakkabog‘"],
+    "Surxondaryo": ["Termiz sh.", "Angor", "Boysun", "Denov", "Jarqo‘rg‘on", "Qumqo‘rg‘on", "Sherobod", "Sho‘rchi", "Uzun"],
+    "Navoiy": ["Navoiy sh.", "Zarafshon", "Karmana", "Konimex", "Navbahor", "Nurota", "Qiziltepa", "Uchquduq", "Xatirchi"],
+    "Jizzax": ["Jizzax sh.", "Arnasoy", "Baxmal", "Do‘stlik", "Forish", "G‘allaorol", "Paxtakor", "Yangiobod", "Zomin"],
+    "Sirdaryo": ["Guliston sh.", "Shirin", "Yangiyer", "Boyovut", "Guliston tumani", "Mirzaobod", "Oqoltin", "Sardoba", "Xovos"],
+    "Qoraqalpog‘iston": ["Nukus sh.", "Amudaryo", "Beruniy", "Chimboy", "Mo‘ynoq", "Qo‘ng‘irot", "Shumanay", "To‘rtko‘l", "Xo‘jayli"],
 }
 REGIONS = list(DISTRICTS.keys())
 
@@ -73,28 +29,8 @@ def verify_uid(uid: int, sig: str) -> bool:
     return sign_uid(uid) == sig
 
 
-async def send_bot_message(chat_id: int, text: str, reply_markup: dict | None = None):
-    payload = {
-        "chat_id": chat_id,
-        "text": text,
-        "parse_mode": "HTML",
-    }
-    if reply_markup:
-        payload["reply_markup"] = reply_markup
-
-    async with aiohttp.ClientSession() as session:
-        await session.post(
-            f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage",
-            json=payload,
-            timeout=20,
-        )
-
-
 def build_html(user_id: int, sig: str) -> str:
-    options = "".join(
-        f'<option value="{html.escape(r)}">{html.escape(r)}</option>'
-        for r in REGIONS
-    )
+    options = "".join(f'<option value="{html.escape(r)}">{html.escape(r)}</option>' for r in REGIONS)
     districts_json = json.dumps(DISTRICTS, ensure_ascii=False)
     back_url = BOT_URL or "#"
 
@@ -140,11 +76,7 @@ body {{
   margin-bottom: 14px;
 }}
 h1 {{ margin: 0 0 8px; font-size: 28px; }}
-p.subtitle {{
-  margin: 0 0 20px;
-  color: #cbd5e1;
-  line-height: 1.6;
-}}
+p.subtitle {{ margin: 0 0 20px; color: #cbd5e1; line-height: 1.6; }}
 label {{
   display: block;
   margin-top: 14px;
@@ -364,45 +296,29 @@ document.getElementById("regForm").addEventListener("submit", async (e) => {{
 </html>"""
 
 
-async def health(request: web.Request):
-    return web.Response(text="OK")
+async def send_bot_message(user_id: int, text: str, reply_markup: dict | None = None):
+    from main import bot
+    await bot.send_message(user_id, text, reply_markup=reply_markup)
 
 
 async def register_page(request: web.Request):
-    try:
-        uid = int(request.query.get("uid", "0"))
-    except ValueError:
-        return web.Response(text="Noto‘g‘ri uid", status=400)
+    uid = request.query.get("uid", "").strip()
+    sig = request.query.get("sig", "").strip()
 
-    sig = request.query.get("sig", "")
-    if not verify_uid(uid, sig):
+    if not uid.isdigit() or not sig:
         return web.Response(text="Ruxsat yo‘q", status=403)
 
-    user = await db.get_user(uid)
-    if not user:
-        return web.Response(
-            text="Foydalanuvchi topilmadi. Avval botda /start bosing.",
-            status=404
-        )
+    if not verify_uid(int(uid), sig):
+        return web.Response(text="Noto‘g‘ri imzo", status=403)
 
-    return web.Response(
-        text=build_html(uid, sig),
-        content_type="text/html"
-    )
+    return web.Response(text=build_html(int(uid), sig), content_type="text/html")
 
 
 async def register_api(request: web.Request):
-    try:
-        data = await request.json()
-    except Exception:
-        return web.json_response({"ok": False, "error": "Noto‘g‘ri so‘rov"})
+    data = await request.json()
 
-    try:
-        uid = int(data.get("uid", 0))
-    except Exception:
-        uid = 0
-
-    sig = str(data.get("sig", ""))
+    uid = int(data.get("uid", 0))
+    sig = data.get("sig", "")
     full_name = str(data.get("full_name", "")).strip()
     instagram = str(data.get("instagram", "")).strip().replace("@", "")
     region = str(data.get("region", "")).strip()
@@ -427,17 +343,14 @@ async def register_api(request: web.Request):
     if not user:
         return web.json_response({"ok": False, "error": "Foydalanuvchi topilmadi. Avval botda /start bosing."})
 
-    try:
-        ok, result, promo_branch = await db.register_user(
-            user_id=uid,
-            full_name=full_name,
-            instagram=instagram,
-            region=region,
-            district=district,
-            promo_code=promo_code or None
-        )
-    except Exception as e:
-        return web.json_response({"ok": False, "error": f"Server xatosi: {str(e)}"})
+    ok, result, promo_branch = await db.register_user(
+        user_id=uid,
+        full_name=full_name,
+        instagram=instagram,
+        region=region,
+        district=district,
+        promo_code=promo_code or None
+    )
 
     if not ok:
         return web.json_response({"ok": False, "error": result})
@@ -449,30 +362,32 @@ async def register_api(request: web.Request):
             f"\n🏬 Filial: <b>{html.escape(promo_branch)}</b>"
         )
 
-    try:
-        await send_bot_message(
-            uid,
-            f"🎉 <b>Tabriklaymiz, {html.escape(full_name)}!</b>\n\n"
-            f"Siz konkurs ishtirokchisiga aylandingiz va <b>+5 ball</b> qo‘lga kiritdingiz.\n"
-            f"🆔 Sizning FEST ID raqamingiz: <b>{result}</b>\n"
-            f"{promo_text}\n\n"
-            f"Endi <b>🚀 BOSHLASH</b> tugmasini bosing va keyingi bosqichga o‘ting.\n\n"
-            f"Savollar tug‘ilsa, <b>YORDAM</b> menyusi orqali adminga savolingizni yuboring yoki <b>@aloouz_chat</b> ga bog‘laning.",
-            reply_markup={
-                "inline_keyboard": [
-                    [{"text": "🚀 BOSHLASH", "callback_data": "open_main_menu"}]
-                ]
-            }
-        )
-    except Exception:
-        pass
+    kb = after_registration_keyboard().model_dump()
+
+    await send_bot_message(
+        uid,
+        f"🎉 <b>Tabriklaymiz, {html.escape(full_name)}!</b>\n\n"
+        f"Siz konkurs ishtirokchisiga aylandingiz va <b>+5 ball</b> qo‘lga kiritdingiz.\n"
+        f"🆔 Sizning FEST ID raqamingiz: <b>{result}</b>\n"
+        f"{promo_text}\n\n"
+        f"Endi <b>🚀 BOSHLASH</b> tugmasini bosing va keyingi bosqichga o‘ting.\n\n"
+        f"Savollar tug‘ilsa, <b>YORDAM</b> menyusi orqali adminga savolingizni yuboring yoki <b>@aloouz_chat</b> ga bog‘laning.",
+        reply_markup=kb
+    )
 
     msg = f"🎉 Tabriklaymiz! Siz muvaffaqiyatli ro‘yxatdan o‘tdingiz. FEST ID: {result}."
     if promo_branch:
         msg += " Promokod qabul qilindi va +5 ball berildi."
     msg += " Endi ORQAGA QAYTISH tugmasini bosib botga qayting."
 
-    return web.json_response({"ok": True, "message": msg})
+    return web.json_response({
+        "ok": True,
+        "message": msg
+    })
+
+
+async def health(request: web.Request):
+    return web.Response(text="OK")
 
 
 async def setup_web_server():

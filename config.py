@@ -23,12 +23,6 @@ CHANNEL_URL = f"https://t.me/{CHANNEL_USERNAME}"
 SHOP_BOT_URL = f"https://t.me/{SHOP_BOT_USERNAME}"
 BOT_URL = f"https://t.me/{BOT_USERNAME}" if BOT_USERNAME else ""
 
-INSTAGRAM_MAIN_URL = os.getenv("INSTAGRAM_MAIN_URL", "https://instagram.com/aloo.uz_").strip()
-INSTAGRAM_RULE_TEXT = os.getenv(
-    "INSTAGRAM_RULE_TEXT",
-    "@aloo.uz_ profiliga va u obuna bo‘lgan 15 ta profilga ham obuna bo‘lish majburiy",
-).strip()
-
 ADMIN_IDS = parse_admin_ids(os.getenv("ADMIN_IDS", ""))
 
 DB_PATH = os.getenv("DB_PATH", "bot.db").strip()

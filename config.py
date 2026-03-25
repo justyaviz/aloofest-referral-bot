@@ -20,7 +20,6 @@ CHANNEL_USERNAME = os.getenv("CHANNEL_USERNAME", "aloo_uzb").replace("@", "").st
 SHOP_BOT_USERNAME = os.getenv("SHOP_BOT_USERNAME", "aloouz_bot").replace("@", "").strip()
 
 CHANNEL_URL = f"https://t.me/{CHANNEL_USERNAME}"
-SHOP_BOT_URL = f"https://t.me/{SHOP_BOT_USERNAME}"
 BOT_URL = f"https://t.me/{BOT_USERNAME}" if BOT_USERNAME else ""
 
 ADMIN_IDS = parse_admin_ids(os.getenv("ADMIN_IDS", ""))
@@ -30,8 +29,9 @@ PORT = int(os.getenv("PORT", "8080"))
 
 REGISTRATION_BONUS = int(os.getenv("REGISTRATION_BONUS", "5"))
 REFERRAL_BONUS = int(os.getenv("REFERRAL_BONUS", "5"))
+PROMO_BONUS = int(os.getenv("PROMO_BONUS", "15"))
 
-REFERRAL_VIDEO_FILE_ID = os.getenv("REFERRAL_VIDEO_FILE_ID", "").strip()
+REFERRAL_IMAGE_FILE_ID = os.getenv("REFERRAL_IMAGE_FILE_ID", "").strip()
 
 if not BOT_TOKEN:
     raise RuntimeError("BOT_TOKEN topilmadi")

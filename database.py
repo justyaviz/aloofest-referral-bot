@@ -2,16 +2,15 @@ from __future__ import annotations
 
 import time
 import aiosqlite
-from config import DB_PATH, REGISTRATION_BONUS, REFERRAL_BONUS
+from config import DB_PATH, REGISTRATION_BONUS, REFERRAL_BONUS, PROMO_BONUS
 
 
 DEFAULT_PRIZES = [
-    ("🥇 1-o‘rin", "Redmi Robot Mop 2", "Hayit mega konkursi 1-o‘rin sovg‘asi"),
-    ("🥈 2-o‘rin", "Novey Senat SC1 Red telefoni", "Hayit mega konkursi 2-o‘rin sovg‘asi"),
-    ("🥉 3-o‘rin", "Zamonaviy elektr choynak", "Hayit mega konkursi 3-o‘rin sovg‘asi"),
-    ("🎲 Haftalik random 1", "AirPods", "Haftalik random sovg‘asi"),
-    ("🎲 Haftalik random 2", "Telefon", "Haftalik random sovg‘asi"),
-    ("🎲 Haftalik random 3", "Smartwatch / Planshet / boshqa sovg‘alar", "Haftalik random sovg‘asi"),
+    ("🎁 Asosiy sovg‘a", "Telefon", "Asosiy random sovg‘asi"),
+    ("🎁 Asosiy sovg‘a", "Planshet", "Asosiy random sovg‘asi"),
+    ("🎁 Asosiy sovg‘a", "Elektr choynak", "Asosiy random sovg‘asi"),
+    ("🎁 Asosiy sovg‘a", "Smartwatch", "Asosiy random sovg‘asi"),
+    ("🎁 Asosiy sovg‘a", "AirPods", "Asosiy random sovg‘asi"),
 ]
 
 PROMO_CODES = {
@@ -41,11 +40,10 @@ class Database:
                 username TEXT,
                 tg_name TEXT,
                 full_name TEXT,
-                instagram TEXT,
                 phone TEXT,
                 region TEXT,
                 district TEXT,
-                fest_id TEXT UNIQUE,
+                rid TEXT UNIQUE,
                 referrer_id INTEGER,
                 promo_code TEXT,
                 promo_branch TEXT,
@@ -65,6 +63,7 @@ class Database:
                 "ALTER TABLE users ADD COLUMN promo_code TEXT",
                 "ALTER TABLE users ADD COLUMN promo_branch TEXT",
                 "ALTER TABLE users ADD COLUMN banned INTEGER DEFAULT 0",
+                "ALTER TABLE users ADD COLUMN rid TEXT",
             ]:
                 try:
                     await db.execute(sql)
@@ -75,6 +74,16 @@ class Database:
             CREATE TABLE IF NOT EXISTS referrals (
                 invited_user_id INTEGER PRIMARY KEY,
                 inviter_id INTEGER,
+                created_at INTEGER
+            )
+            """)
+
+            await db.execute("""
+            CREATE TABLE IF NOT EXISTS point_logs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER,
+                points INTEGER,
+                reason TEXT,
                 created_at INTEGER
             )
             """)
@@ -113,9 +122,9 @@ class Database:
                 winner_user_id INTEGER,
                 winner_name TEXT,
                 telegram_id INTEGER,
-                instagram TEXT,
-                fest_id TEXT,
-                diamonds INTEGER,
+                rid TEXT,
+                phone TEXT,
+                points INTEGER,
                 start_date TEXT,
                 end_date TEXT,
                 created_at INTEGER,
@@ -183,29 +192,37 @@ class Database:
             cur = await db.execute("SELECT * FROM users WHERE user_id = ?", (user_id,))
             return await cur.fetchone()
 
-    async def get_user_by_fest(self, fest_id: str):
+    async def get_user_by_rid(self, rid: str):
         async with aiosqlite.connect(DB_PATH) as db:
             db.row_factory = aiosqlite.Row
-            cur = await db.execute("SELECT * FROM users WHERE fest_id = ?", (fest_id,))
+            cur = await db.execute("SELECT * FROM users WHERE rid = ?", (rid,))
             return await cur.fetchone()
 
-    async def next_fest_id(self) -> str:
+    async def next_rid(self) -> str:
         async with aiosqlite.connect(DB_PATH) as db:
             cur = await db.execute("SELECT COUNT(*) FROM users WHERE registered = 1")
             count = (await cur.fetchone())[0] + 1
-            return f"FEST-{count:03d}"
+            return f"R-{count}"
+
+    async def log_points(self, user_id: int, points: int, reason: str, created_at: int | None = None):
+        created_at = created_at or int(time.time())
+        async with aiosqlite.connect(DB_PATH) as db:
+            await db.execute("""
+                INSERT INTO point_logs (user_id, points, reason, created_at)
+                VALUES (?, ?, ?, ?)
+            """, (user_id, points, reason, created_at))
+            await db.commit()
 
     async def register_user(
         self,
         user_id: int,
         full_name: str,
-        instagram: str,
         region: str,
         district: str,
         promo_code: str | None = None,
     ):
         now = int(time.time())
-        fest_id = await self.next_fest_id()
+        rid = await self.next_rid()
 
         async with aiosqlite.connect(DB_PATH) as db:
             db.row_factory = aiosqlite.Row
@@ -222,20 +239,20 @@ class Database:
                 promo_branch = PROMO_CODES.get(promo_code)
                 if not promo_branch:
                     return False, "Promokod noto‘g‘ri", None
-                promo_bonus = 5
+                promo_bonus = PROMO_BONUS
 
             await db.execute("""
                 UPDATE users
-                SET full_name = ?, instagram = ?, region = ?, district = ?,
-                    fest_id = COALESCE(fest_id, ?),
+                SET full_name = ?, region = ?, district = ?,
+                    rid = COALESCE(rid, ?),
                     promo_code = COALESCE(promo_code, ?),
                     promo_branch = COALESCE(promo_branch, ?),
                     registered = 1,
                     registered_at = COALESCE(registered_at, ?)
                 WHERE user_id = ?
             """, (
-                full_name, instagram, region, district,
-                fest_id, promo_code, promo_branch, now, user_id
+                full_name, region, district,
+                rid, promo_code, promo_branch, now, user_id
             ))
 
             if first_registration:
@@ -244,6 +261,17 @@ class Database:
                     SET diamonds = diamonds + ?
                     WHERE user_id = ?
                 """, (REGISTRATION_BONUS + promo_bonus, user_id))
+
+                await db.execute("""
+                    INSERT INTO point_logs (user_id, points, reason, created_at)
+                    VALUES (?, ?, ?, ?)
+                """, (user_id, REGISTRATION_BONUS, "registration_bonus", now))
+
+                if promo_bonus > 0:
+                    await db.execute("""
+                        INSERT INTO point_logs (user_id, points, reason, created_at)
+                        VALUES (?, ?, ?, ?)
+                    """, (user_id, promo_bonus, "promo_bonus", now))
 
                 if user["referrer_id"]:
                     before_cur = await db.execute(
@@ -270,8 +298,13 @@ class Database:
                             WHERE user_id = ?
                         """, (REFERRAL_BONUS, user["referrer_id"]))
 
+                        await db.execute("""
+                            INSERT INTO point_logs (user_id, points, reason, created_at)
+                            VALUES (?, ?, ?, ?)
+                        """, (user["referrer_id"], REFERRAL_BONUS, "referral_bonus", now))
+
             await db.commit()
-            return True, fest_id, promo_branch
+            return True, rid, promo_branch
 
     async def save_phone(self, user_id: int, phone: str):
         async with aiosqlite.connect(DB_PATH) as db:
@@ -282,13 +315,17 @@ class Database:
             """, (phone, user_id))
             await db.commit()
 
-    async def add_points(self, user_id: int, points: int):
+    async def add_points(self, user_id: int, points: int, reason: str = "admin_add"):
         async with aiosqlite.connect(DB_PATH) as db:
             await db.execute("""
                 UPDATE users
                 SET diamonds = COALESCE(diamonds, 0) + ?
                 WHERE user_id = ?
             """, (points, user_id))
+            await db.execute("""
+                INSERT INTO point_logs (user_id, points, reason, created_at)
+                VALUES (?, ?, ?, ?)
+            """, (user_id, points, reason, int(time.time())))
             await db.commit()
 
     async def add_referrals(self, user_id: int, refs: int):
@@ -298,6 +335,17 @@ class Database:
                 SET referral_count = COALESCE(referral_count, 0) + ?
                 WHERE user_id = ?
             """, (refs, user_id))
+            # referal count change -> points also sync bo‘lsin
+            points = refs * REFERRAL_BONUS
+            await db.execute("""
+                UPDATE users
+                SET diamonds = COALESCE(diamonds, 0) + ?
+                WHERE user_id = ?
+            """, (points, user_id))
+            await db.execute("""
+                INSERT INTO point_logs (user_id, points, reason, created_at)
+                VALUES (?, ?, ?, ?)
+            """, (user_id, points, "admin_referral_adjust", int(time.time())))
             await db.commit()
 
     async def set_ready_user(self, user_id: int, diamonds: int, refs: int):
@@ -325,9 +373,19 @@ class Database:
             await db.execute("""
                 UPDATE users
                 SET diamonds = 25, referral_count = 5, registered = 1
-                WHERE fest_id = 'FEST-002'
+                WHERE rid = 'R-2'
             """)
             await db.commit()
+
+    async def get_week_points(self, user_id: int, start_ts: int, end_ts: int) -> int:
+        async with aiosqlite.connect(DB_PATH) as db:
+            cur = await db.execute("""
+                SELECT COALESCE(SUM(points), 0)
+                FROM point_logs
+                WHERE user_id = ? AND created_at BETWEEN ? AND ?
+            """, (user_id, start_ts, end_ts))
+            row = await cur.fetchone()
+            return row[0] or 0
 
     async def top_users(self, limit: int = 10):
         async with aiosqlite.connect(DB_PATH) as db:
@@ -339,26 +397,6 @@ class Database:
                 LIMIT ?
             """, (limit,))
             return await cur.fetchall()
-
-    async def get_rank(self, user_id: int):
-        async with aiosqlite.connect(DB_PATH) as db:
-            db.row_factory = aiosqlite.Row
-            cur = await db.execute("SELECT diamonds FROM users WHERE user_id = ?", (user_id,))
-            row = await cur.fetchone()
-            if not row:
-                return None
-            diamonds = row["diamonds"]
-
-            cur = await db.execute(
-                "SELECT COUNT(*) + 1 FROM users WHERE diamonds > ? AND registered = 1 AND banned = 0",
-                (diamonds,)
-            )
-            rank = (await cur.fetchone())[0]
-
-            cur = await db.execute("SELECT COUNT(*) FROM users WHERE registered = 1 AND banned = 0")
-            total = (await cur.fetchone())[0]
-
-            return {"rank": rank, "total": total, "diamonds": diamonds}
 
     async def get_prizes(self):
         async with aiosqlite.connect(DB_PATH) as db:
@@ -427,18 +465,11 @@ class Database:
             cur = await db.execute("SELECT COALESCE(SUM(diamonds),0) FROM users")
             total_diamonds = (await cur.fetchone())[0]
 
-            cur = await db.execute("""
-                SELECT COUNT(*) FROM users
-                WHERE referral_count >= 3 AND diamonds >= 15 AND banned = 0 AND registered = 1
-            """)
-            random_ready = (await cur.fetchone())[0]
-
             return {
                 "total_users": total_users,
                 "registered": registered,
                 "banned": banned,
                 "diamonds": total_diamonds,
-                "random_ready": random_ready,
             }
 
     async def get_region_stats(self):
@@ -484,7 +515,7 @@ class Database:
             else:
                 cur = await db.execute("""
                     SELECT * FROM users
-                    WHERE username LIKE ? OR full_name LIKE ? OR fest_id LIKE ? OR promo_code LIKE ? OR promo_branch LIKE ?
+                    WHERE full_name LIKE ? OR rid LIKE ? OR promo_code LIKE ? OR promo_branch LIKE ? OR username LIKE ?
                     LIMIT ?
                 """, (like, like, like, like, like, limit))
             return await cur.fetchall()
@@ -500,22 +531,22 @@ class Database:
         winner_user_id: int,
         winner_name: str,
         telegram_id: int,
-        instagram: str,
-        fest_id: str,
-        diamonds: int,
+        rid: str,
+        phone: str,
+        points: int,
         start_date: str,
         end_date: str,
     ):
         async with aiosqlite.connect(DB_PATH) as db:
             await db.execute("""
                 INSERT INTO random_history (
-                    winner_user_id, winner_name, telegram_id, instagram,
-                    fest_id, diamonds, start_date, end_date, created_at, confirmed
+                    winner_user_id, winner_name, telegram_id, rid,
+                    phone, points, start_date, end_date, created_at, confirmed
                 )
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0)
             """, (
-                winner_user_id, winner_name, telegram_id, instagram,
-                fest_id, diamonds, start_date, end_date, int(time.time())
+                winner_user_id, winner_name, telegram_id, rid,
+                phone, points, start_date, end_date, int(time.time())
             ))
             await db.commit()
 
@@ -540,12 +571,18 @@ class Database:
         async with aiosqlite.connect(DB_PATH) as db:
             db.row_factory = aiosqlite.Row
             cur = await db.execute("""
-                SELECT * FROM users
-                WHERE registered = 1
-                  AND banned = 0
-                  AND registered_at BETWEEN ? AND ?
-                  AND referral_count >= 3
-                  AND diamonds >= 15
+                SELECT u.*
+                FROM users u
+                WHERE u.registered = 1
+                  AND u.banned = 0
+                  AND EXISTS (
+                    SELECT 1
+                    FROM point_logs p
+                    WHERE p.user_id = u.user_id
+                      AND p.created_at BETWEEN ? AND ?
+                    GROUP BY p.user_id
+                    HAVING COALESCE(SUM(p.points), 0) >= 25
+                  )
             """, (start_ts, end_ts))
             return await cur.fetchall()
 
